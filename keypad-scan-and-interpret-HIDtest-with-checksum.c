@@ -80,11 +80,6 @@ int cmp_array(char* x, char* y) {
 	return 0;
 }
 
-void cpy_array(char* src, char* dst) {
-	int i;
-	for(i=0;i<8;i++) dst[i]=src[i];
-}
-
 unsigned char read_kp_line() { // Return new keypad line state.
 	return (PIND&0xfc)|(PINB&3);
 }
@@ -227,16 +222,6 @@ void debounce_and_count (void) {
 	}
 }
 
-void update_keypress_counts (void) {
-	int i, j, k;
-	for(i=3; i<7; i++) { //rows
-		for(j=0; j<3; j++) { //columns
-			k=(i-3)*3+j;
-			if(!(kp[i]&(1<<j))) presscounts[k]++;
-		}
-	}
-}
-
 void fill_krb (void) {
 	char scancodes[]={0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 4, 0x27, 5};
 	int i, j, k, m;
@@ -257,54 +242,11 @@ void fill_krb (void) {
 	fletcher16(krb+8, krb+9, krb, 8);
 }
 
-uint16_t volatile icount;
-
-//Based on http://www.engblaze.com/we-interrupt-this-program-to-bring-you-a-tutorial-on-arduino-interrupts/
-void interrupt_test_init() {
-	icount=0;
-	DDRD&=~4; PORTD|=4;
-	EICRA |= (1 << ISC01);    // Trigger INT0 on falling edge
-	EIMSK |= (1 << INT0);     // Enable external interrupt INT0
-	// Oddly, even though internal pullup is enabled (confirmed by current draw when pin is grounded), if the pin is left externally disconnected, one single spurious interrupt is reliably generated as soon as INT0 is enabled. If the pin is externally pulled up, that spurious interrupt is reliably prevented.
-	// In a separate test, connecting V+ and gnd through a SPDT to an RC network (time constant about 1s) to the interrupt pin (for both slow rise and slow fall), I usually (though not always) get multiple interrupts both during rise and during fall, proving that there's no schmitt trigger on the interrupt. Why isn't there one?
-}
-
-// Interrupt Service Routine attached to INT0 vector
-ISR(INT0_vect) {
-	icount++;
-	clearscreen();
-	sprintf(sbuf, "%d", icount);
-	uartWriteString(sbuf);
-}
-
-ISR(TIMER1_OVF_vect) {
-	sprintf(sbuf, " OVERFLOW");
-	uartWriteString(sbuf);
-}
-
-ISR(TIMER1_COMPA_vect) {
-	sprintf(sbuf, " CTCOVERFLOW");
-	uartWriteString(sbuf);
-}
-
 int main (void)
 {
-	//DDRD|=0xfc; DDRB|=1;
 	int i;
 	USARTInit(0); //416 is 2400bps, 103 is 9600bps, 0 is 1Mbps. Can't do 115200bps reliably because UART clock is divided from the arduino uno's 16MHz master clock, which can't get near enough to 115.2kHz. See table 20-6 on page 200 of http://www.atmel.com/Images/doc8271.pdf for details.
 	unsigned char c;
-	//_delay_ms(2000); //debug
-	//c=USARTReadChar();
-	//sprintf(sbuf, "Starting...");
-	uartWriteString(sbuf);
-	//_delay_ms(1000); //debug
-	//interrupt_test_init();
-	//sei();
-	OCR1A = 15; //Approx 1ms
-	TCCR1B |= (1 << CS10); //|(1<<CS12); //|(1 << WGM12);
-	//TIMSK1 = (1 << TOIE1);
-	TIMSK1 = (1 << OCIE1A);
-	uint16_t start, end, a1, a2, a3;
 	debounce_counter_init_press=PRESS_BOUNCE_MS/SAMPLE_PERIOD_MS;
 	if(PRESS_BOUNCE_MS%SAMPLE_PERIOD_MS) debounce_counter_init_press++;
 	debounce_counter_init_release=RELEASE_BOUNCE_MS/SAMPLE_PERIOD_MS;
@@ -324,52 +266,6 @@ int main (void)
 			fill_krb();
 			uartWriteArray(krb, 10);
 		}
-	}
-	while(1) {
-		int k;
-		for(k=0; k<9; k++) {
-			krb[2]=k+4;
-			uartWriteArray(krb, 8);
-			krb[2]=0;
-			uartWriteArray(krb, 8);
-			_delay_ms(250);
-		}
-		while(1) _delay_ms(1000); //end
-	}
-	while(1) {
-		//start/=16;
-		//end/=16;
-		TCNT1=0; scan_kp(); a1=TCNT1;
-		TCNT1=0; debounce_and_count(); a2=TCNT1;
-		_delay_ms(SAMPLE_PERIOD_MS); //Comment out for max scan speed, for maximum detection of bounces (rather than just filtering of bounces, which happens in any case).
-		//if(cmp_array(kp, new_kp)) { // Keypad state changed (either at user level, or due to bouncing; I'm not debouncing the keys).
-		if(kpchanged) { // Debounced keypad state changed.
-			//Not needed since debounce() accomplishes this: cpy_array(new_kp, kp);
-			kpchanged=0;
-			//update_keypress_counts();
-			TCNT1=0; interpret_and_print_kp(); a3=TCNT1;
-			//_delay_ms(10); //Debug; this alone fails to solve the glitches which the 1ms inter-line delay in scan_kp solves, but that delay alone solves the problem, so this 10ms delay is unnecessary.
-			TCNT1=0; end=TCNT1;
-			sprintf(sbuf, "bouncecount:%d, phantomcount:%d, scan_kp=%d, debounce_and_count=%d, interpret_and_print_kp=%d", bouncecount, phantomcount, a1, a2, a3);
-			uartWriteString(sbuf);
-		}
-	}
-
-	while(1) {
-		start=TCNT1;
-		_delay_ms(1000);
-		end=TCNT1;
-		start/=16;
-		end/=16;
-		sprintf(sbuf, "%x.\r\n", end-start);
-		uartWriteString(sbuf);
-	}
-	while(1) {
-		c=USARTReadChar();
-		if(c=='a') USARTWriteChar('\n');
-		else if(c=='d') USARTWriteChar('\r');
-		else if (c=='c') clearscreen();
-		else USARTWriteChar(c);
 	}
 	return 0;
 }
