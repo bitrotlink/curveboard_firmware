@@ -1,65 +1,15 @@
 /*
-             LUFA Library
-     Copyright (C) Dean Camera, 2010.
-              
-  dean [at] fourwalledcubicle [dot] com
-      www.fourwalledcubicle.com
-*/
-
-/*
-  Copyright 2010  Dean Camera (dean [at] fourwalledcubicle [dot] com)
-
-  Permission to use, copy, modify, distribute, and sell this 
-  software and its documentation for any purpose is hereby granted
-  without fee, provided that the above copyright notice appear in 
-  all copies and that both that the copyright notice and this
-  permission notice and warranty disclaimer appear in supporting 
-  documentation, and that the name of the author not be used in 
-  advertising or publicity pertaining to distribution of the 
-  software without specific, written prior permission.
-
-  The author disclaim all warranties with regard to this
-  software, including all implied warranties of merchantability
-  and fitness.  In no event shall the author be liable for any
-  special, indirect or consequential damages or any damages
-  whatsoever resulting from loss of use, data or profits, whether
-  in an action of contract, negligence or other tortious action,
-  arising out of or in connection with the use or performance of
-  this software.
-*/
-
-/*-
- * Copyright (c) 2011 Darran Hunt (darran [at] hunt dot net dot nz)
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
- * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
- * THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-/*
+ See the file License in this directory for the license for this file.
+ This program is derived from http://hunt.net.nz/users/darran/weblog/b3029/attachments/bd341/arduino-keyboard-0.3.tar.gz which in turn is derived from a demo program in Dean Camera's LUFA Library.
+ Darran's revision history:
  * Date         Rev  Description
  * 21-Mar-2011  0.1  Initial version.
  * 23-Mar-2011  0.2  Improved handling of serial reports to ensure that all reports
  *                   will be sent.
  * 13-Apr-2011  0.3  Extended range of keys from 101 to 231.
  */
+
+ //Modified by me to use 1Mbps instead of 9600bps, and to use fletcher16 checksum and to flush input garbage.
 
 /** \file
  *
@@ -69,8 +19,31 @@
 
 #include "Arduino-keyboard.h"
 
+//Copied from http://en.wikipedia.org/wiki/Fletcher%27s_checksum
+void fletcher16( uint8_t *checkA, uint8_t *checkB, uint8_t *data, size_t len )
+{
+        uint16_t sum1 = 0xff, sum2 = 0xff;
+ 
+        while (len) {
+                size_t tlen = len > 21 ? 21 : len;
+                len -= tlen;
+                do {
+                        sum1 += *data++;
+                        sum2 += sum1;
+                } while (--tlen);
+                sum1 = (sum1 & 0xff) + (sum1 >> 8);
+                sum2 = (sum2 & 0xff) + (sum2 >> 8);
+        }
+        /* Second reduction step to reduce sums to 8 bits */
+        sum1 = (sum1 & 0xff) + (sum1 >> 8);
+        sum2 = (sum2 & 0xff) + (sum2 >> 8);
+        *checkA = (uint8_t)sum1;
+        *checkB = (uint8_t)sum2;
+}
+
 /** Buffer to hold the previously generated Keyboard HID report, for comparison purposes inside the HID class driver. */
 uint8_t PrevKeyboardHIDReportBuffer[sizeof(USB_KeyboardReport_Data_t)];
+uint8_t uartRcvBuf[sizeof(USB_KeyboardReport_Data_t)+2]; //Includes fletcher16 checksum
 
 /** LUFA HID Class driver interface configuration and state information. This structure is
  *  passed to all HID Class driver functions, so that multiple instances of the same class
@@ -127,7 +100,7 @@ void SetupHardware(void)
 	wdt_disable();
 
 	/* Hardware Initialization */
-	Serial_Init(9600, false);
+	Serial_Init(1000000, false); UCSR1B |= 1 << RXCIE1;
 	USB_Init();
 
 	/* Start the flush timer so that overflows occur rapidly to push received bytes to the USB interface */
@@ -136,39 +109,22 @@ void SetupHardware(void)
 	/* Pull target /RESET line high */
 	AVR_RESET_LINE_PORT |= AVR_RESET_LINE_MASK;
 	AVR_RESET_LINE_DDR  |= AVR_RESET_LINE_MASK;
-
-	/* Must turn off USART before reconfiguring it, otherwise incorrect operation may occur */
-	UCSR1B = 0;
-	UCSR1A = 0;
-	UCSR1C = 0;
-
-	/* Special case 57600 baud for compatibility with the ATmega328 bootloader. */	
-	UBRR1  = SERIAL_2X_UBBRVAL(9600);
-
-	UCSR1C = ((1 << UCSZ11) | (1 << UCSZ10));
-	UCSR1A = (1 << U2X1);
-	UCSR1B = ((1 << RXCIE1) | (1 << TXEN1) | (1 << RXEN1));
 }
 
 /** Event handler for the library USB Connection event. */
 void EVENT_USB_Device_Connect(void)
 {
-	//LEDs_SetAllLEDs(LEDMASK_USB_ENUMERATING);
 }
 
 /** Event handler for the library USB Disconnection event. */
 void EVENT_USB_Device_Disconnect(void)
 {
-	//LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
 }
 
 /** Event handler for the library USB Configuration Changed event. */
 void EVENT_USB_Device_ConfigurationChanged(void)
 {
-	//LEDs_SetAllLEDs(LEDMASK_USB_READY);
-
 	HID_Device_ConfigureEndpoints(&Keyboard_HID_Interface);
-
 	USB_Device_EnableSOFEvents();
 }
 
@@ -206,13 +162,19 @@ bool CALLBACK_HID_Device_CreateHIDReport(
 
 	RingBuff_Count_t BufferCount = RingBuffer_GetCount(&USARTtoUSB_Buffer);
 
-	if (BufferCount >= 8) {
-	    for (ind=0; ind<8; ind++) {
-		keyboardData[ind] = RingBuffer_Remove(&USARTtoUSB_Buffer);
-	    }
-
-	    /* Send an led status byte back for every keyboard report received */
-	    Serial_TxByte(ledReport);
+	uint8_t checkA, checkB;
+	if (BufferCount >= 10) {
+		for (ind=0; ind<10; ind++) {
+			uartRcvBuf[ind] = RingBuffer_Remove(&USARTtoUSB_Buffer);
+		}
+		fletcher16(&checkA, &checkB, uartRcvBuf, 8);
+		if (checkA==uartRcvBuf[8] && checkB==uartRcvBuf[9]) {
+		    for (ind=0; ind<8; ind++) {
+			keyboardData[ind] = uartRcvBuf[ind];
+		    }
+		    /* Send an led status byte back for every keyboard report received */
+		    Serial_TxByte(ledReport);
+		} else while(RingBuffer_GetCount(&USARTtoUSB_Buffer)) RingBuffer_Remove(&USARTtoUSB_Buffer); //Bad checksum; assume possibly other garbage in ring buffer which breaks the 10-byte alignment, so flush the buffer.
 	}
 
 	for (ind=0; ind<8; ind++) {
