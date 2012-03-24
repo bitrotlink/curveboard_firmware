@@ -9,7 +9,7 @@
  * 13-Apr-2011  0.3  Extended range of keys from 101 to 231.
  */
 
- //Modified by me to use 1Mbps instead of 9600bps, and to use fletcher16 checksum and to flush input garbage.
+ //Modified by me in March 2012 to use 1Mbps instead of 9600bps, to use fletcher16 checksum, acks, and retries, and to flush input garbage.
 
 /** \file
  *
@@ -18,6 +18,8 @@
  */
 
 #include "Arduino-keyboard.h"
+#include "inter_AVR_protocol.h"
+#include <util/delay.h>
 
 //Copied from http://en.wikipedia.org/wiki/Fletcher%27s_checksum
 void fletcher16( uint8_t *checkA, uint8_t *checkB, uint8_t *data, size_t len )
@@ -43,7 +45,9 @@ void fletcher16( uint8_t *checkA, uint8_t *checkB, uint8_t *data, size_t len )
 
 /** Buffer to hold the previously generated Keyboard HID report, for comparison purposes inside the HID class driver. */
 uint8_t PrevKeyboardHIDReportBuffer[sizeof(USB_KeyboardReport_Data_t)];
-uint8_t uartRcvBuf[sizeof(USB_KeyboardReport_Data_t)+2]; //Includes fletcher16 checksum
+//uint8_t uartRcvBuf[sizeof(USB_KeyboardReport_Data_t)+2]; //Includes fletcher16 checksum
+kr_t uartRcvBuf_v;
+uint8_t* uartRcvBuf=(uint8_t*)(&uartRcvBuf_v);
 
 /** LUFA HID Class driver interface configuration and state information. This structure is
  *  passed to all HID Class driver functions, so that multiple instances of the same class
@@ -84,6 +88,8 @@ int main(void)
 	RingBuffer_InitBuffer(&USARTtoUSB_Buffer);
 
 	sei();
+//	_delay_ms(2000);
+//	Serial_TxByte(START);
 
 	for (;;)
 	{
@@ -163,18 +169,21 @@ bool CALLBACK_HID_Device_CreateHIDReport(
 	RingBuff_Count_t BufferCount = RingBuffer_GetCount(&USARTtoUSB_Buffer);
 
 	uint8_t checkA, checkB;
-	if (BufferCount >= 10) {
-		for (ind=0; ind<10; ind++) {
+	if (BufferCount >= sizeof(kr_t)) {
+		for (ind=0; ind<sizeof(kr_t); ind++) {
 			uartRcvBuf[ind] = RingBuffer_Remove(&USARTtoUSB_Buffer);
 		}
-		fletcher16(&checkA, &checkB, uartRcvBuf, 8);
-		if (checkA==uartRcvBuf[8] && checkB==uartRcvBuf[9]) {
-		    for (ind=0; ind<8; ind++) {
-			keyboardData[ind] = uartRcvBuf[ind];
-		    }
-		    /* Send an led status byte back for every keyboard report received */
-		    Serial_TxByte(ledReport);
-		} else while(RingBuffer_GetCount(&USARTtoUSB_Buffer)) RingBuffer_Remove(&USARTtoUSB_Buffer); //Bad checksum; assume possibly other garbage in ring buffer which breaks the 10-byte alignment, so flush the buffer.
+		fletcher16(&checkA, &checkB, uartRcvBuf, sizeof(kr_t)-2);
+		if (checkA==uartRcvBuf_v.fletcher16_checksum[0] && checkB==uartRcvBuf_v.fletcher16_checksum[1]) {
+			Serial_TxByte(uartRcvBuf_v.report_sequence_number); //Acknowledge good report.
+			for (ind=0; ind<8; ind++) {
+				keyboardData[ind] = uartRcvBuf[ind];
+			}
+		     /* Send an led status byte back for every keyboard report received */
+		    //Serial_TxByte(ledReport);
+		} else { //Bad checksum; assume possibly other garbage in ring buffer which breaks the sizeof(kr_t) alignment, so flush the buffer and send nack.
+			while(RingBuffer_GetCount(&USARTtoUSB_Buffer)) RingBuffer_Remove(&USARTtoUSB_Buffer);
+		}
 	}
 
 	for (ind=0; ind<8; ind++) {
