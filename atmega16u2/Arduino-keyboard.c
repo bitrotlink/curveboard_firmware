@@ -45,6 +45,9 @@ void fletcher16( uint8_t *checkA, uint8_t *checkB, uint8_t *data, size_t len )
 
 /** Buffer to hold the previously generated Keyboard HID report, for comparison purposes inside the HID class driver. */
 uint8_t PrevKeyboardHIDReportBuffer[sizeof(USB_KeyboardReport_Data_t)];
+
+uint8_t PrevHID2ReportBuffer[16]; //FIXME: Is this supposed to be 2? Or 16? Is the 16 in the descriptor I copied from the microchip site a mistake, since the report is only 2 bytes?
+
 //uint8_t uartRcvBuf[sizeof(USB_KeyboardReport_Data_t)+2]; //Includes fletcher16 checksum
 kr_t uartRcvBuf_v;
 uint8_t* uartRcvBuf=(uint8_t*)(&uartRcvBuf_v);
@@ -68,6 +71,21 @@ USB_ClassInfo_HID_Device_t Keyboard_HID_Interface =
 			},
     };
 
+USB_ClassInfo_HID_Device_t HID2_Interface =
+ 	{
+		.Config =
+			{
+				.InterfaceNumber              = 1,
+
+				.ReportINEndpointNumber       = HID2_EPNUM,
+				.ReportINEndpointSize         = HID2_EPSIZE,
+				.ReportINEndpointDoubleBank   = false,
+
+				.PrevReportINBuffer           = PrevHID2ReportBuffer,
+				.PrevReportINBufferSize       = sizeof(PrevHID2ReportBuffer),
+			},
+    };
+
 /** Main program entry point. This routine contains the overall program flow, including initial
  *  setup of all components and the main program loop.
  */
@@ -76,6 +94,7 @@ USB_ClassInfo_HID_Device_t Keyboard_HID_Interface =
 RingBuff_t USARTtoUSB_Buffer;
 
 uint8_t keyboardData[8] = { 0 };
+uint16_t pageC_Data = 0;
 uint8_t ledReport = 0;
 
 /** Main program entry point. This routine contains the overall program flow, including initial
@@ -94,6 +113,7 @@ int main(void)
 	for (;;)
 	{
 		HID_Device_USBTask(&Keyboard_HID_Interface);
+		HID_Device_USBTask(&HID2_Interface);
 		USB_USBTask();
 	}
 }
@@ -131,6 +151,7 @@ void EVENT_USB_Device_Disconnect(void)
 void EVENT_USB_Device_ConfigurationChanged(void)
 {
 	HID_Device_ConfigureEndpoints(&Keyboard_HID_Interface);
+	HID_Device_ConfigureEndpoints(&HID2_Interface);
 	USB_Device_EnableSOFEvents();
 }
 
@@ -138,12 +159,14 @@ void EVENT_USB_Device_ConfigurationChanged(void)
 void EVENT_USB_Device_UnhandledControlRequest(void)
 {
 	HID_Device_ProcessControlRequest(&Keyboard_HID_Interface);
+	HID_Device_ProcessControlRequest(&HID2_Interface);
 }
 
 /** Event handler for the USB device Start Of Frame event. */
 void EVENT_USB_Device_StartOfFrame(void)
 {
 	HID_Device_MillisecondElapsed(&Keyboard_HID_Interface);
+	HID_Device_MillisecondElapsed(&HID2_Interface);
 }
 
 /** HID class driver callback function for the creation of HID reports to the host.
@@ -179,6 +202,7 @@ bool CALLBACK_HID_Device_CreateHIDReport(
 			for (ind=0; ind<8; ind++) {
 				keyboardData[ind] = uartRcvBuf[ind];
 			}
+			pageC_Data = *((uint16_t*)(uartRcvBuf+ind));
 		     /* Send an led status byte back for every keyboard report received */
 		    //Serial_TxByte(ledReport);
 		} else { //Bad checksum; assume possibly other garbage in ring buffer which breaks the sizeof(kr_t) alignment, so flush the buffer and send nack.
@@ -186,11 +210,15 @@ bool CALLBACK_HID_Device_CreateHIDReport(
 		}
 	}
 
-	for (ind=0; ind<8; ind++) {
-	    datap[ind] = keyboardData[ind];
+	if(HIDInterfaceInfo == &Keyboard_HID_Interface) {
+		for (ind=0; ind<8; ind++) {
+		    datap[ind] = keyboardData[ind];
+		}
+		*ReportSize = sizeof(USB_KeyboardReport_Data_t);
+	} else {
+		*((uint16_t*)datap) = pageC_Data;
+		*ReportSize = 2;
 	}
-
-	*ReportSize = sizeof(USB_KeyboardReport_Data_t);
 	return false;
 }
 
@@ -209,7 +237,7 @@ void CALLBACK_HID_Device_ProcessHIDReport(USB_ClassInfo_HID_Device_t* const HIDI
                                           const uint16_t ReportSize)
 {
     /* Need to send status back to the Arduino to manage caps, scrolllock, numlock leds */
-   ledReport = *((uint8_t *)ReportData);
+   if(HIDInterfaceInfo == &Keyboard_HID_Interface) ledReport = *((uint8_t *)ReportData);
 }
 
 /** ISR to manage the reception of data from the serial port, placing received bytes into a circular buffer

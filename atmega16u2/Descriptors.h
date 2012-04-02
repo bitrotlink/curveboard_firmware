@@ -50,17 +50,26 @@
 typedef struct
 {
 	USB_Descriptor_Configuration_Header_t Config;
-	USB_Descriptor_Interface_t            HID_Interface;
-	USB_HID_Descriptor_t                  HID_KeyboardHID;
-	USB_Descriptor_Endpoint_t             HID_ReportINEndpoint;
+	USB_Descriptor_Interface_t            HID1_Interface;
+	USB_HID_Descriptor_t                  HID1_KeyboardHID;
+	USB_Descriptor_Endpoint_t             HID1_ReportINEndpoint;
+	USB_Descriptor_Interface_t            HID2_Interface;
+	USB_HID_Descriptor_t                  HID2_HID;
+	USB_Descriptor_Endpoint_t             HID2_ReportINEndpoint;
 } USB_Descriptor_Configuration_t;
 			
 /* Macros: */
 /** Endpoint number of the Keyboard HID reporting IN endpoint. */
 #define KEYBOARD_EPNUM               1
 
+#define HID2_EPNUM               2
+
+
 /** Size in bytes of the Keyboard HID reporting IN and OUT endpoints. */		
 #define KEYBOARD_EPSIZE              8
+
+#define HID2_EPSIZE              2 //HID2 is page 0x0c device, whose keycodes are 2 bytes each.
+
 
 /* Function Prototypes: */
 uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,

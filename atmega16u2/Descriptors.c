@@ -79,6 +79,22 @@ USB_Descriptor_HIDReport_Datatype_t PROGMEM KeyboardReport[] =
 	0xc0                 /* End Collection                                  */
 };
 
+
+USB_Descriptor_HIDReport_Datatype_t PROGMEM HID2_Report[] ={
+//Copied from http://www.microchip.com/forums/m106845-p2-print.aspx
+  0x05, 0x0C, // usage page (consumer)
+  0x09, 0x01, // usage (consumer control)
+  0xA1, 0x01, // collection (application)
+  0x19, 0x00, // usage minimum
+  0x2A, 0x5F, 0x02, // usage maximum
+  0x15, 0x00, // logical minimum
+  0x26, 0x5F, 0x02, // logical maximum
+  0x95, 1, // Report Count
+  0x75, 16, // report size
+  0x81, 0x00, // input (data, array)
+  0xC0
+};  // end collection
+
 /** Device descriptor structure. This descriptor, located in FLASH memory, describes the overall
  *  device characteristics, including the supported USB version, control endpoint size and the
  *  number of device configurations. The descriptor is read out by the USB host when the enumeration
@@ -118,7 +134,7 @@ USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 			.Header                 = {.Size = sizeof(USB_Descriptor_Configuration_Header_t), .Type = DTYPE_Configuration},
 
 			.TotalConfigurationSize = sizeof(USB_Descriptor_Configuration_t),
-			.TotalInterfaces        = 1,
+			.TotalInterfaces        = 2,
 				
 			.ConfigurationNumber    = 1,
 			.ConfigurationStrIndex  = NO_DESCRIPTOR,
@@ -128,7 +144,7 @@ USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 			.MaxPowerConsumption    = USB_CONFIG_POWER_MA(100)
 		},
 		
-	.HID_Interface = 
+	.HID1_Interface = 
 		{
 			.Header                 = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_Interface},
 
@@ -144,7 +160,7 @@ USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 			.InterfaceStrIndex      = NO_DESCRIPTOR
 		},
 
-	.HID_KeyboardHID = 
+	.HID1_KeyboardHID = 
 		{  
 			.Header                 = {.Size = sizeof(USB_HID_Descriptor_t), .Type = DTYPE_HID},
 			
@@ -155,7 +171,7 @@ USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 			.HIDReportLength        = sizeof(KeyboardReport)
 		},
 		
-	.HID_ReportINEndpoint = 
+	.HID1_ReportINEndpoint = 
 		{
 			.Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = DTYPE_Endpoint},
 
@@ -164,6 +180,44 @@ USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 			.EndpointSize           = KEYBOARD_EPSIZE,
 			.PollingIntervalMS      = 0x0A
 		},
+
+	.HID2_Interface = 
+		{
+			.Header                 = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_Interface},
+
+			.InterfaceNumber        = 0x01,
+			.AlternateSetting       = 0x00,
+			
+			.TotalEndpoints         = 1,
+				
+			.Class                  = 0x03,
+			.SubClass               = 0x01,
+			.Protocol               = HID_NON_BOOT_PROTOCOL,
+				
+			.InterfaceStrIndex      = NO_DESCRIPTOR
+		},
+
+	.HID2_HID = 
+		{  
+			.Header                 = {.Size = sizeof(USB_HID_Descriptor_t), .Type = DTYPE_HID},
+			
+			.HIDSpec                = VERSION_BCD(01.11),
+			.CountryCode            = 0x00,
+			.TotalReportDescriptors = 1,
+			.HIDReportType          = DTYPE_Report,
+			.HIDReportLength        = sizeof(HID2_Report)
+		},
+		
+	.HID2_ReportINEndpoint = 
+		{
+			.Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = DTYPE_Endpoint},
+
+			.EndpointAddress        = (ENDPOINT_DESCRIPTOR_DIR_IN | HID2_EPNUM),
+			.Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
+			.EndpointSize           = HID2_EPSIZE,
+			.PollingIntervalMS      = 0x0A
+		},
+
 };
 
 /** Language descriptor structure. This descriptor, located in FLASH memory, is returned when the host requests
@@ -241,14 +295,32 @@ uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue, const uint8_t wIndex,
 			}
 			
 			break;
-		case DTYPE_HID: 
-			Address = (void*)&ConfigurationDescriptor.HID_KeyboardHID;
-			Size    = sizeof(USB_HID_Descriptor_t);
-			break;
-		case DTYPE_Report: 
-			Address = (void*)&KeyboardReport;
-			Size    = sizeof(KeyboardReport);
-			break;
+                case DTYPE_HID:
+                        if (!(wIndex))
+                        {
+                                Address = (void*)&ConfigurationDescriptor.HID1_KeyboardHID;
+                                Size    = sizeof(USB_HID_Descriptor_t);
+                        }
+                        else
+                        {
+                                Address = (void*)&ConfigurationDescriptor.HID2_HID;
+                                Size    = sizeof(USB_HID_Descriptor_t);
+                        }
+                        break;
+                case DTYPE_Report:
+                        if (!(wIndex))
+                        {
+                                Address = (void*)&KeyboardReport;
+                                Size    = sizeof(KeyboardReport);
+                        }
+                        else
+                        {
+                                Address = (void*)&HID2_Report;
+                                Size    = sizeof(HID2_Report);
+                        }
+
+                        break;
+
 	}
 	
 	*DescriptorAddress = Address;
