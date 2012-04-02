@@ -1,3 +1,3 @@
 /usr/local/bin/dfu-programmer atmega16u2 erase
-/usr/local/bin/dfu-programmer atmega16u2 flash --debug 1 /usr/share/arduino/hardware/arduino/firmwares/arduino-keyboard-custom/Arduino-keyboard.hex
+/usr/local/bin/dfu-programmer atmega16u2 flash --debug 1 atmega16u2-kbd/Arduino-keyboard.hex
 /usr/local/bin/dfu-programmer atmega16u2 reset
