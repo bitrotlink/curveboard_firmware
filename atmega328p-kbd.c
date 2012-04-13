@@ -206,7 +206,7 @@ void update_key(int i, int j, int k) {
 				presscounts[k]++;
 				mod_keys|=modkey;
 			} else mod_keys&=~modkey; //Key released.
-			kbchanged=1;
+			if(!lastkey_stillpressed) kbchanged=1; //Don't report change of modifier keys while last non_mod key is still pressed, because such a condition is caused by asymmetric chord release (e.g. user presses shift, then a symbol key, then releases shift before releasing the symbol key) rather than by intentional press of the non-modified key immediately following the modified key.
 		} else { //Non-mod key.
 			if(!prevstates[k]) { //Key pressed.
 				presscounts[k]++;
@@ -306,7 +306,8 @@ void fill_krb (void) {
 void fill_qwerty_fake_krb(void) {
 	int i;
 	krb.mod_keys=mod_keys;
-	for(i=0; i<6; i++)  krb.nonmod_keys[i]=0;
+	for(i=0; i<6; i++) krb.nonmod_keys[i]=0;
+	krb.page_C_key=0;
 	if(!lastkey_stillpressed) return;
 	int real_shift, qwerty_fake_shift, real_alt, qwerty_fake_alt, qwerty_fake_ctrl, qwerty_fake_key;
 	real_shift=mod_keys&(MKl_shft|MKr_shft);
@@ -315,7 +316,21 @@ void fill_qwerty_fake_krb(void) {
 	qwerty_fake_alt=real_alt;
 	qwerty_fake_ctrl=mod_keys&(MKl_ctrl|MKr_ctrl);
 	qwerty_fake_key=lastkey;
-	if(real_alt) switch(lastkey) {
+	if(lastkey==Fbufswch) {qwerty_fake_key=0; krb.page_C_key=0x202;}
+	else if(lastkey==Fbufclse) {qwerty_fake_key=0; krb.page_C_key=0x203;}
+	else if(lastkey==Fbufcmit) {qwerty_fake_key=0; krb.page_C_key=0x207;}
+	else if(lastkey==Fwebsrch) {qwerty_fake_key=0; krb.page_C_key=0x221;}
+	else if(lastkey==Flnkback) {qwerty_fake_key=0; krb.page_C_key=0x224;}
+	else if(lastkey==Flinkfwd) {qwerty_fake_key=0; krb.page_C_key=0x225;}
+	else if(lastkey==Fbmklist) {qwerty_fake_key=0; krb.page_C_key=0x022a;}
+	//Coding bw_word and end_wrd as ctrl-left and -right because those are standard widely-supported codings.
+	else if(lastkey==Fbw_word) {qwerty_fake_key=Fleft; qwerty_fake_ctrl=MKl_ctrl;}
+	else if(lastkey==Fend_wrd) {qwerty_fake_key=Fright; qwerty_fake_ctrl=MKl_ctrl;}
+	//Coding the following ctrl codes because I'm out of suitable USB codes.
+	else if(lastkey==Fexecmd) {qwerty_fake_key=Fctxmenu; qwerty_fake_ctrl=MKl_ctrl;}
+	else if(lastkey==Fselsexp) {qwerty_fake_key=Fsetmark;  qwerty_fake_ctrl=MKl_ctrl;}
+	else if(lastkey==Fnxtmtch) {qwerty_fake_key=Fisearch; qwerty_fake_ctrl=MKl_ctrl;}
+	else if(real_alt) switch(lastkey) {
 		case Fscrlk:
 			qwerty_fake_key=Finsert; qwerty_fake_alt=0; break;
 		case Fprintsc:
@@ -323,9 +338,10 @@ void fill_qwerty_fake_krb(void) {
 		case Fpause:
 			qwerty_fake_ctrl=MKl_ctrl; qwerty_fake_alt=0; break; //Alt-pause (dlyz _break_) is qwerty ctrl-pause.
 	} else if(!(mod_keys&(MKl_ctrl|MKl_alt|MKl_win|MKr_ctrl|MKr_altgr|MKr_win))) switch(lastkey) {
+/*		case K0:
 		case K2:
-		case K3:
 		case K4:
+		case K5:
 		case K6:
 		case K7:
 		case K8:
@@ -336,12 +352,11 @@ void fill_qwerty_fake_krb(void) {
 		case Kasterisk:
 		case Kplus:
 			if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Kunsupported;} break;
-		case K0:
-			if(real_shift) qwerty_fake_key=K5; break;
+*/
 		case K1:
 			if(real_shift) qwerty_fake_key=K3; break;
-		case K5:
-			if(real_shift) qwerty_fake_key=K6; break;
+		case K3: //This so that shift-1 and shift-3 are distinguishable, so the latter can be mapped in X11 to a non-ASCII Unicode char.
+			if(real_shift) qwerty_fake_key=K1; break;
 		case Kunderline:
 			if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Kbacktick;}
 			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kdash;}
@@ -367,21 +382,17 @@ void fill_qwerty_fake_krb(void) {
 			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kslash;}
 			break;
 		case Ksemicolon:
-			if(real_shift) qwerty_fake_key=K7; break;
+			if(real_shift) qwerty_fake_key=Kbackslash; break;
 		case Kcolon:
-			if(real_shift) qwerty_fake_key=Kbackslash;
+			if(real_shift) qwerty_fake_key=K7;
 			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Ksemicolon;}
 			break;
 		case Kbackslash:
 			if(real_shift) qwerty_fake_key=Kperiod; break;
 		case Ffnenter:
-			qwerty_fake_key=Ksmrtntr; break;
+			if(!real_shift) qwerty_fake_key=Ksmrtntr; break;
 		case Fscrlk:
 			if(real_shift) qwerty_fake_key=Fcapslk; qwerty_fake_shift=0; break;
-		case Fbw_word:
-			qwerty_fake_key=Fleft; qwerty_fake_ctrl=MKl_ctrl; break;
-		case Fend_wrd:
-			qwerty_fake_key=Fright; qwerty_fake_ctrl=MKl_ctrl; break;
 	}
 	krb.mod_keys=(mod_keys&~(MKl_shft|MKr_shft)&~(MKl_ctrl|MKr_ctrl)&~MKl_alt)|qwerty_fake_shift|qwerty_fake_ctrl|qwerty_fake_alt;
 	krb.nonmod_keys[0]=qwerty_fake_key;
