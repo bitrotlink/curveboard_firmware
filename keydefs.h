@@ -90,9 +90,7 @@
 #define Kasterisk	0x55
 #define Kplus	0x57
 #define Fctxmenu	0x65
-#define F13	0x68
-#define F14	0x69
-//See below for F15-F24
+//See below for F13-F24
 #define Fhlpprfx	0x75
 #define Fsetmark	0x77
 #define Frepedit	0x79
@@ -123,7 +121,14 @@
 #define Kleft_doublequote	0x8A //International4
 #define Kright_doublequote	0x8B //International5
 
+//Qwerty_fakes surrogates, in order to have enough keycodes for all my characters.
+#define Ksurr3	0x92 //Keyboard Lang 3
+#define Ksurr4	0x93 //Keyboard Lang 4
+#define Ksurr5	0x94 //Keyboard Lang 5
+
 //Nonstandard dlyz keys, using standard function key scancodes
+#define Farg3	0x68 //F13
+#define Farg2	0x69 //F14
 #define Fgenprfx	0x6A //F15
 #define Fcompose	0x6B //F16
 #define Fgo	0x6C //F17
@@ -132,13 +137,13 @@
 #define Fexchpm	0x6F //F20
 #define Ffindchr	0x70 //F21
 #define Ffnenter	0x71 //F22
-#define Flinetab	0x72 //F23
+#define Fcmplete	0x72 //F23
 #define Ffw_word	0x73 //F24
 
 //Nonstandard dlyz keys, using reserved scancodes. fill_qwerty_fake_krb() translates all these to standard codes.
-#define Fbufswch	0xE8
-#define Fbufclse	0xE9
-#define Fbufcmit	0xEA
+#define Fswchbuf	0xE8
+#define Fclsebuf	0xE9
+#define Fcmitbuf	0xEA
 #define Fwebsrch	0xEB
 #define Flnkback	0xEC
 #define Flinkfwd	0xED
@@ -157,24 +162,25 @@
 #define Kna	0xA6
 #define Fna	0xA7
 
-#define Fdelback	Kdelback //Sends the same code regardless of whether fn key is held.
+//#define Fdelback	Kdelback //Sends the same code regardless of whether fn key is held.
 
 //12 by 6 matrices, row major. "key" matrix for individual keys, and "fn" matrix for fn-chorded keys.
 uint8_t logical_key_matrix[]={
-Kna, K7, K6, K5, K0, K8, K9, K1, K2, K3, K4, Kna,
+Kna, K4, K3, K2, K1, K8, K9, K0, K5, K6, K7, Kna,
 Kunderline, Kdash, Kp, Ku, Kc, Kb, Kk, Kd, Kl, Ky, Kz, Kq,
 Kequal, Ka, Kn, Ki, Ks, Kw, Kg, Kt, Kh, Ko, Kr, Kj,
-Kleft_doublequote, Kslash, Kperiod, Kcomma, Kf, Kleft_parenthesis, Kright_parenthesis, Km, Kv, Kapostrophe, Kx, Kright_doublequote,
-Kna, Kleftbracket, Kquestionmark, Ksemicolon, Kplus, Kl_ctrl, Kl_win, Kasterisk, Kcolon, Kbackslash, Krightbracket, Kna,
-Kna, Kl_fn, Ke, Kdelback, Kl_shft, Kr_altgr, Kl_alt, Ksmrtntr, Ksmrttab, Kspace, Kr_fn, Kna
+Kleft_doublequote, Kapostrophe, Kperiod, Kcomma, Kf, Kleft_parenthesis, Kright_parenthesis, Km, Kv, Kslash, Kx, Kright_doublequote,
+Kna, Kleftbracket, Kquestionmark, Ksemicolon, Kasterisk, Kl_ctrl, Kl_win, Kplus, Kcolon, Kbackslash, Krightbracket, Kna,
+Kna, Kl_fn, Ke, Ksmrttab, Kl_shft, Kr_altgr, Kl_alt, Ksmrtntr, Kdelback, Kspace, Kr_fn, Kna
 };
 
 uint8_t logical_fn_matrix[]={
-Fna, F7, F6, F5, F10, F8, F9, F1, F2, F3, F4, Fna,
-F11, Fgenprfx, Fexecmd, Fdelete, Fbufswch, Fbufclse, Fpgup, Fbw_word, Fup, Fend_wrd, Fgo, F12,
-F13, Fuarg, Fsetmark, Fcut, Fisearch, Fbufcmit, Fpgdn, Fleft, Fdown, Fright, Fselsexp, F14,
-Fpause, Fcompose, Fundo, Fcopy, Fpaste, Fgomark, Fexchpm, Fhome, Fnxtmtch, Fend, Ffindchr, Fctxmenu,
-Fna, Fprintsc, Fhlpprfx, Fwebsrch, Frepedit, Kl_ctrl, Kl_win, Flnkback, Fbmklist, Flinkfwd, Fscrlk, Fna,
-Fna, Kl_fn, Fesc, Fdelback, Kl_shft, Kr_altgr, Kl_alt, Ffnenter, Flinetab, Ffw_word, Kr_fn, Fna
+Fna, F4, F3, F2, F1, F8, F9, F10, F5, F6, F7, Fna,
+F11, Fcompose, Fexecmd, Fundo, Fswchbuf, Fclsebuf, Fpgup, Fbw_word, Fup, Fend_wrd, Fgo, F12,
+Farg3, Fuarg, Fsetmark, Fcut, Fisearch, Fcmitbuf, Fnxtmtch, Fleft, Fdown, Fright, Fselsexp, Farg2,
+Fpause, Fgenprfx, Fdelete, Fcopy, Fpaste, Fgomark, Fexchpm, Fhome, Fpgdn, Fend, Ffindchr, Fctxmenu,
+Fna, Fprintsc, Fhlpprfx, Frepedit, Fwebsrch, Kl_ctrl, Kl_win, Flnkback, Fbmklist, Flinkfwd, Fscrlk, Fna,
+Fna, Kl_fn, Fesc, Fcmplete, Kl_shft, Kr_altgr, Kl_alt, Ffnenter, Kdelback, Ffw_word, Kr_fn, Fna
 };
 
+//Kl_fn, 

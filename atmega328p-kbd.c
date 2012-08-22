@@ -309,16 +309,17 @@ void fill_qwerty_fake_krb(void) {
 	for(i=0; i<6; i++) krb.nonmod_keys[i]=0;
 	krb.page_C_key=0;
 	if(!lastkey_stillpressed) return;
-	int real_shift, qwerty_fake_shift, real_alt, qwerty_fake_alt, qwerty_fake_ctrl, qwerty_fake_key;
+	int real_shift, qwerty_fake_shift, real_alt, qwerty_fake_alt, qwerty_fake_altgr, qwerty_fake_ctrl, qwerty_fake_key;
 	real_shift=mod_keys&(MKl_shft|MKr_shft);
 	real_alt=mod_keys&MKl_alt;
 	qwerty_fake_shift=real_shift;
 	qwerty_fake_alt=real_alt;
+	qwerty_fake_altgr=mod_keys&MKr_altgr;
 	qwerty_fake_ctrl=mod_keys&(MKl_ctrl|MKr_ctrl);
 	qwerty_fake_key=lastkey;
-	if(lastkey==Fbufswch) {qwerty_fake_key=0; krb.page_C_key=0x202;}
-	else if(lastkey==Fbufclse) {qwerty_fake_key=0; krb.page_C_key=0x203;}
-	else if(lastkey==Fbufcmit) {qwerty_fake_key=0; krb.page_C_key=0x207;}
+	if(lastkey==Fswchbuf) {qwerty_fake_key=0; krb.page_C_key=0x202;}
+	else if(lastkey==Fclsebuf) {qwerty_fake_key=0; krb.page_C_key=0x203;}
+	else if(lastkey==Fcmitbuf) {qwerty_fake_key=0; krb.page_C_key=0x207;}
 	else if(lastkey==Fwebsrch) {qwerty_fake_key=0; krb.page_C_key=0x221;}
 	else if(lastkey==Flnkback) {qwerty_fake_key=0; krb.page_C_key=0x224;}
 	else if(lastkey==Flinkfwd) {qwerty_fake_key=0; krb.page_C_key=0x225;}
@@ -338,33 +339,79 @@ void fill_qwerty_fake_krb(void) {
 		case Fpause:
 			qwerty_fake_ctrl=MKl_ctrl; qwerty_fake_alt=0; break; //Alt-pause (dlyz _break_) is qwerty ctrl-pause.
 	} else if(!(mod_keys&(MKl_ctrl|MKl_alt|MKl_win|MKr_ctrl|MKr_altgr|MKr_win))) switch(lastkey) {
-/*		case K0:
-		case K2:
-		case K4:
+/* Delete:
 		case K5:
 		case K6:
-		case K7:
-		case K8:
-		case K9:
 		case Kequal:
 		case Kleftbracket:
 		case Krightbracket:
-		case Kasterisk:
-		case Kplus:
 			if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Kunsupported;} break;
 */
+		case K0:
+			if(real_shift) {
+				qwerty_fake_key=Ksurr3;
+				qwerty_fake_shift=0;
+				qwerty_fake_altgr=MKr_altgr;
+			}
+			break;
 		case K1:
 			if(real_shift) qwerty_fake_key=K3; break;
-		case K3: //This so that shift-1 and shift-3 are distinguishable, so the latter can be mapped in X11 to a non-ASCII Unicode char.
-			if(real_shift) qwerty_fake_key=K1; break;
+		case K2:
+			if(real_shift) {
+				qwerty_fake_key=Ksurr3;
+				qwerty_fake_altgr=MKr_altgr;
+			}
+			break;
+		case K3:
+			if(real_shift) {
+				qwerty_fake_key=Ksurr4;
+				qwerty_fake_shift=0;
+			}
+			break;
+		case K4:
+			if(real_shift) {
+				qwerty_fake_key=Ksurr4;
+			}
+			break;
+		case K7:
+			if(real_shift) {
+				qwerty_fake_key=Ksurr4;
+				qwerty_fake_shift=0;
+				qwerty_fake_altgr=MKr_altgr;
+			}
+			break;
+		case K8:
+			if(real_shift) {
+				qwerty_fake_key=Ksurr4;
+				qwerty_fake_altgr=MKr_altgr;
+			}
+			break;
+		case K9:
+			if(real_shift) {
+				qwerty_fake_key=Ksurr5;
+				qwerty_fake_shift=0;
+			}
+			break;
+		case Kasterisk: //X apparently ignores the shift of KP_Multiply and KP_Add, so I have to work around it here.
+			if(real_shift) {
+				qwerty_fake_key=Ksurr5;
+			}
+			break;
+		case Kplus:
+			if(real_shift) {
+				qwerty_fake_key=Ksurr5;
+				qwerty_fake_shift=0;
+				qwerty_fake_altgr=MKr_altgr;
+			}
+			break;
 		case Kunderline:
 			if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Kbacktick;}
 			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kdash;}
 			break;
 		case Kdash:
-			if(real_shift) qwerty_fake_key=K2; break;
-		case Kslash:
 			if(real_shift) qwerty_fake_key=Kbacktick; break;
+		case Kslash:
+			if(real_shift) qwerty_fake_key=K2; break;
 		case Kperiod:
 			if(real_shift) qwerty_fake_key=K1; break;
 		case Kcomma:
@@ -377,14 +424,18 @@ void fill_qwerty_fake_krb(void) {
 			if(real_shift) qwerty_fake_key=Krightbracket;
 			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=K0;}
 			break;
+		case Kleftbracket:
+			if(real_shift) {qwerty_fake_key=Ksurr3; qwerty_fake_shift=0;} break;
+		case Krightbracket:
+			if(real_shift) {qwerty_fake_key=Ksurr3;} break;
 		case Kquestionmark:
 			if(real_shift) qwerty_fake_key=Kcomma;
 			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kslash;}
 			break;
 		case Ksemicolon:
-			if(real_shift) qwerty_fake_key=Kbackslash; break;
+			if(real_shift) qwerty_fake_key=K7; break;
 		case Kcolon:
-			if(real_shift) qwerty_fake_key=K7;
+			if(real_shift) qwerty_fake_key=Kbackslash;
 			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Ksemicolon;}
 			break;
 		case Kbackslash:
@@ -392,9 +443,9 @@ void fill_qwerty_fake_krb(void) {
 		case Ffnenter:
 			if(!real_shift) qwerty_fake_key=Ksmrtntr; break;
 		case Fscrlk:
-			if(real_shift) qwerty_fake_key=Fcapslk; qwerty_fake_shift=0; break;
+			if(real_shift) {qwerty_fake_key=Fcapslk; qwerty_fake_shift=0;} break;
 	}
-	krb.mod_keys=(mod_keys&~(MKl_shft|MKr_shft)&~(MKl_ctrl|MKr_ctrl)&~MKl_alt)|qwerty_fake_shift|qwerty_fake_ctrl|qwerty_fake_alt;
+	krb.mod_keys=(mod_keys&~(MKl_shft|MKr_shft)&~(MKl_ctrl|MKr_ctrl)&~MKl_alt&~MKr_altgr)|qwerty_fake_shift|qwerty_fake_ctrl|qwerty_fake_alt|qwerty_fake_altgr;
 	krb.nonmod_keys[0]=qwerty_fake_key;
 }
 
