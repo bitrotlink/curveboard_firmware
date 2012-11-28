@@ -331,6 +331,8 @@ void fill_qwerty_fake_krb(void) {
 	else if(lastkey==Fexecmd) {qwerty_fake_key=Fctxmenu; qwerty_fake_ctrl=MKl_ctrl;}
 	else if(lastkey==Fselsexp) {qwerty_fake_key=Fsetmark;  qwerty_fake_ctrl=MKl_ctrl;}
 	else if(lastkey==Fnxtmtch) {qwerty_fake_key=Fisearch; qwerty_fake_ctrl=MKl_ctrl;}
+	else if(lastkey==Fnextwin) {qwerty_fake_key=Ksmrttab; qwerty_fake_ctrl=MKl_ctrl;}
+	else if(lastkey==Fcmpletg) {qwerty_fake_key=Kcmplete; qwerty_fake_ctrl=MKl_ctrl;}
 	else if(real_alt) switch(lastkey) {
 		case Fscrlk:
 			qwerty_fake_key=Finsert; qwerty_fake_alt=0; break;
@@ -440,10 +442,10 @@ void fill_qwerty_fake_krb(void) {
 			break;
 		case Kbackslash:
 			if(real_shift) qwerty_fake_key=Kperiod; break;
-		case Ffnenter:
-			if(!real_shift) qwerty_fake_key=Ksmrtntr; break;
 		case Fscrlk:
 			if(real_shift) {qwerty_fake_key=Fcapslk; qwerty_fake_shift=0;} break;
+		case Ffnenter: //Legacy programs do their own interpretation of smrtntr as fnenter or eolchar, and there's no standard way to give an explicit fnenter or eolchar signal, so until I have my virtual keyboard mechanism to translate fnenter to smrtntr for legacy programs, the easiest hack is to translate it in the physical keyboard (which means that I don't have fnenter separate from smrtntr even for Emacs).
+			if(!real_shift) qwerty_fake_key=Ksmrtntr; break;
 	}
 	krb.mod_keys=(mod_keys&~(MKl_shft|MKr_shft)&~(MKl_ctrl|MKr_ctrl)&~MKl_alt&~MKr_altgr)|qwerty_fake_shift|qwerty_fake_ctrl|qwerty_fake_alt|qwerty_fake_altgr;
 	krb.nonmod_keys[0]=qwerty_fake_key;
