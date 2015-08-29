@@ -354,12 +354,14 @@ void fill_qwerty_fake_krb(void) {
 				qwerty_fake_key=Ksurr4;
 			}
 			break;
-		case K7:
+		case K6:
 			if(real_shift) {
 				qwerty_fake_key=Ksurr5;
 				qwerty_fake_shift=0;
 			}
 			break;
+		case K7:
+			if(real_shift) qwerty_fake_key=K6; break;
 		case K8:
 			if(real_shift) {
 				qwerty_fake_key=Ksurr3;
