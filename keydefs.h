@@ -57,7 +57,7 @@
 #define Kbackslash	0x31
 #define Ksemicolon	0x33
 #define Kapostrophe	0x34
-#define Kbacktick	0x35 //Not physically present on Thor; backtick is the shift of backslash.
+#define Kbacktick	0x35
 #define Kcomma	0x36
 #define Kperiod	0x37
 #define Kslash	0x38
@@ -110,12 +110,12 @@
 #define Kl_shft	0xE1
 #define Kl_alt	0xE2
 #define Kl_win	0xE3
-#define Kr_ctrl	0xE4 //Not present on Thor.
-#define Kr_shft	0xE5 //Not present on Thor.
+#define Kr_ctrl	0xE4 //Not present on Zyld.
+#define Kr_shft	0xE5 //Not present on Zyld.
 #define Kr_altgr	0xE6
-#define Kr_win	0xE7 //Not present on Thor.
+#define Kr_win	0xE7 //Not present on Zyld.
 
-//Nonstandard Thor keys
+//Nonstandard Zyld keys
 #define Kquestionmark	0x88 //International2
 #define Kunderline	0x89 //International3
 #define Kleft_doublequote	0x8A //International4
@@ -126,7 +126,7 @@
 #define Ksurr4	0x93 //Keyboard Lang 4
 #define Ksurr5	0x94 //Keyboard Lang 5
 
-//Nonstandard Thor keys, using standard function key scancodes
+//Nonstandard Zyld keys, using standard function key scancodes
 #define F13	0x68 //F13
 #define F14	0x69 //F14
 #define Frevmark	0x6A //F15
@@ -140,7 +140,7 @@
 #define Kindent	0x72 //F23
 #define F0	0x73 //F24
 
-//Nonstandard Thor keys, using reserved scancodes. fill_qwerty_fake_krb() translates all these to standard codes.
+//Nonstandard Zyld keys, using reserved scancodes. fill_qwerty_fake_krb() translates all these to standard codes.
 #define Fswchbuf	0xE8
 #define Fclsebuf	0xE9
 #define Fcmitbuf	0xEA
@@ -159,7 +159,7 @@
 #define Kr_fn	0xF7
 #define Fwgprefx	0xF8
 
-//#define Kunsupported	0xA5 //Sent in Qwerty-fake mode when a Thor key which conflicts with Qwerty is pressed.
+//#define Kunsupported	0xA5 //Sent in Qwerty-fake mode when a Zyld key which conflicts with Qwerty is pressed.
 
 //Nonexistent key and function, to maintain array alignment:
 #define Kna	0xA6
@@ -170,8 +170,8 @@ uint8_t logical_key_matrix[]={
 Kna, K0, K1, K2, K3, K4, K5, K6, K7, K8, K9, Kna,
 Kleft_doublequote, Kdash, Kp, Ku, Kc, Kb, Kk, Kd, Kl, Ky, Kz, Kright_doublequote,
 Kleft_parenthesis, Ka, Kn, Ki, Ks, Kw, Kg, Kt, Kh, Ko, Kr, Kright_parenthesis,
-Kleftbracket, Kapostrophe, Kperiod, Kcomma, Kf, Kequal, Kq, Km, Kv, Kslash, Kx, Krightbracket,
-Kna, Kbackslash, Kquestionmark, Ksemicolon, Kasterisk, Kl_ctrl, Kl_win, Kj, Kcolon, Kunderline, Kplus, Kna,
+Kleftbracket, Kslash, Kperiod, Kcomma, Kf, Kequal, Kq, Km, Kv, Kapostrophe, Kx, Krightbracket,
+Kna, Kbacktick, Kquestionmark, Ksemicolon, Kasterisk, Kl_ctrl, Kl_win, Kj, Kcolon, Kunderline, Kbackslash, Kna,
 Kna, Kl_shft, Ke, Kindent, Ksmrttab, Kr_altgr, Kl_alt, Ksmrtntr, Kdelback, Kspace, Kr_fn, Kna
 };
 

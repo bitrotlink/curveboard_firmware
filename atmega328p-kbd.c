@@ -31,7 +31,7 @@
 #define RETRY_PERIOD_MS 1
 
 #define RETRY_IF_NO_ACK 1 //Disable this when debugging to prevent spewing retries if I'm not sending acks.
-#define USE_QWERTY_FAKES 1 //Send scancodes according to standard qwerty, using fake keys and fake presses of shift, so that the mapping in the OS can be standard qwerty, and brain-dead VMMs such as VMware which provide only PS/2 virtual keyboards to VMs will pass all the keys (dlyz natively uses USB HID page 7 codes which have no PS/2 counterparts, so VMware drops those keys when sent to VMs). For example, when colon is pressed, instead of sending dlyz native 0xcb (which _is_ the standard code for colon, though X on Debian 6 doesn't recognize it), send shift-semicolon.
+#define USE_QWERTY_FAKES 1 //Send scancodes according to standard qwerty, using fake keys and fake presses of shift, so that the mapping in the OS can be standard qwerty, and brain-dead VMMs such as VMware which provide only PS/2 virtual keyboards to VMs will pass all the keys (zyld natively uses USB HID page 7 codes which have no PS/2 counterparts, so VMware drops those keys when sent to VMs). For example, when colon is pressed, instead of sending zyld native 0xcb (which _is_ the standard code for colon, though X on Debian 6 doesn't recognize it), send shift-semicolon.
 #define MAX_ROLLOVER 16
 
 unsigned int debounce_counter_init_press;
@@ -334,104 +334,107 @@ void fill_qwerty_fake_krb(void) {
 	else if(lastkey==Fnextwin) {qwerty_fake_key=Ksmrttab; qwerty_fake_ctrl=MKl_ctrl;}
 	else if(lastkey==Findsexp) {qwerty_fake_key=Kindent; qwerty_fake_ctrl=MKl_ctrl;}
 	else if(lastkey==Fwgprefx) {qwerty_fake_key=Frevmark; qwerty_fake_ctrl=MKl_ctrl;}
-	else if(real_alt) switch(lastkey) {
-		case Fscrlk:
-			qwerty_fake_key=Finsert; qwerty_fake_alt=0; break;
-		case Fprintsc:
-			qwerty_fake_key=Fsysreq; qwerty_fake_alt=0; break;
-		case Fpause:
-			qwerty_fake_ctrl=MKl_ctrl; qwerty_fake_alt=0; break; //Alt-pause (dlyz _break_) is qwerty ctrl-pause.
-	} else if(!(mod_keys&(MKl_ctrl|MKl_alt|MKl_win|MKr_ctrl|MKr_altgr|MKr_win))) switch(lastkey) {
-		case K0:
-			if(real_shift) qwerty_fake_key=Kequal; break;
-		case K1:
-			if(real_shift) qwerty_fake_key=K5; break;
-		case K5:
-			if(real_shift) {
-				qwerty_fake_key=Kcomma;
-				qwerty_fake_shift=0;
-			}
-			break;
-		case K6:
-			if(real_shift) {
-				qwerty_fake_key=Kslash;
-				qwerty_fake_shift=0;
-			}
-			break;
-		case K7:
-			if(real_shift) qwerty_fake_key=K6; break;
-		case K8:
-			if(real_shift) {
-				qwerty_fake_key=Kperiod;
-				qwerty_fake_shift=0;
-			}
-			break;
-		case K9:
-			if(real_shift) {
-				qwerty_fake_key=Ksurr4;
-				qwerty_fake_shift=0;
-				qwerty_fake_altgr=MKr_altgr;
-			}
-			break;
-		case Kequal:
-			if(real_shift) qwerty_fake_key=Ksurr4; break;
-		case Kasterisk: //X apparently ignores the shift of KP_Multiply, so I have to work around it here.
-			if(real_shift) {
-				qwerty_fake_key=Ksurr5;
-			}
-			break;
-		case Kbacktick:
-			if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Ksurr5;}
-			break;
-		case Kunderline:
-			if(real_shift) qwerty_fake_key=Kperiod;
-			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kdash;}
-			break;
-		case Kdash:
-			if(real_shift) {
-				qwerty_fake_key=Ksurr4;
-				qwerty_fake_altgr=MKr_altgr;
-			}
-			break;
-		case Kslash:
-			if(real_shift) qwerty_fake_key=Kbacktick; break;
-		case Kperiod:
-			if(real_shift) qwerty_fake_key=K1; break;
-		case Kcomma:
-			if(real_shift) {qwerty_fake_key=Ksurr4; qwerty_fake_shift=0;} break;
-		case Kleft_parenthesis:
-			if(real_shift) qwerty_fake_key=Kleftbracket;
-			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=K9;}
-			break;
-		case Kright_parenthesis:
-			if(real_shift) qwerty_fake_key=Krightbracket;
-			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=K0;}
-			break;
-		case Kleftbracket:
-			if(real_shift) {qwerty_fake_key=Ksurr3; qwerty_fake_shift=0;} break;
-		case Krightbracket:
-			if(real_shift) {qwerty_fake_key=Ksurr3;} break;
-		case Kquestionmark:
-			if(real_shift) qwerty_fake_key=Kcomma;
-			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kslash;}
-			break;
-		case Ksemicolon:
-			if(real_shift) qwerty_fake_key=K7; break;
-		case Kcolon:
-			if(real_shift) qwerty_fake_key=Kbackslash;
-			else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Ksemicolon;}
-			break;
-		case Kbackslash:
-			if(real_shift) {
-				qwerty_fake_key=Ksurr5;
-				qwerty_fake_shift=0;
-				qwerty_fake_altgr=MKr_altgr;
-			}
-			break;
-		case Fscrlk:
-			if(real_shift) {qwerty_fake_key=Fcapslk; qwerty_fake_shift=0;} break;
-		case Ffnenter: //Legacy programs do their own interpretation of smrtntr as fnenter or eolchar, and there's no standard way to give an explicit fnenter or eolchar signal, so until I have my virtual keyboard mechanism to translate fnenter to smrtntr for legacy programs, the easiest hack is to translate it in the physical keyboard (which means that I don't have fnenter separate from smrtntr even for Emacs).
-			if(!real_shift) qwerty_fake_key=Ksmrtntr; break;
+	else {
+	  if(real_alt) switch(lastkey) {
+	    case Fscrlk:
+	      qwerty_fake_key=Finsert; qwerty_fake_alt=0; break;
+	    case Fprintsc:
+	      qwerty_fake_key=Fsysreq; qwerty_fake_alt=0; break;
+	    case Fpause:
+	      qwerty_fake_ctrl=MKl_ctrl; qwerty_fake_alt=0; break; //Alt-pause (zyld _break_) is qwerty ctrl-pause.
+	    }
+	  if(!(mod_keys&MKr_altgr)) switch(lastkey) {
+	    case K0:
+	      if(real_shift) qwerty_fake_key=Kequal; break;
+	    case K1:
+	      if(real_shift) qwerty_fake_key=K5; break;
+	    case K5:
+	      if(real_shift) {
+		qwerty_fake_key=Kcomma;
+		qwerty_fake_shift=0;
+	      }
+	      break;
+	    case K6:
+	      if(real_shift) {
+		qwerty_fake_key=Kslash;
+		qwerty_fake_shift=0;
+	      }
+	      break;
+	    case K7:
+	      if(real_shift) qwerty_fake_key=K6; break;
+	    case K8:
+	      if(real_shift) {
+		qwerty_fake_key=Kperiod;
+		qwerty_fake_shift=0;
+	      }
+	      break;
+	    case K9:
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr4;
+		qwerty_fake_shift=0;
+		qwerty_fake_altgr=MKr_altgr;
+	      }
+	      break;
+	    case Kequal:
+	      if(real_shift) qwerty_fake_key=Ksurr4; break;
+	    case Kasterisk: //X apparently ignores the shift of KP_Multiply, so I have to work around it here.
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr5;
+	      }
+	      break;
+	    case Kbacktick:
+	      if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Ksurr5;}
+	      break;
+	    case Kunderline:
+	      if(real_shift) qwerty_fake_key=Kperiod;
+	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kdash;}
+	      break;
+	    case Kdash:
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr4;
+		qwerty_fake_altgr=MKr_altgr;
+	      }
+	      break;
+	    case Kslash:
+	      if(real_shift) qwerty_fake_key=Kbacktick; break;
+	    case Kperiod:
+	      if(real_shift) qwerty_fake_key=K1; break;
+	    case Kcomma:
+	      if(real_shift) {qwerty_fake_key=Ksurr4; qwerty_fake_shift=0;} break;
+	    case Kleft_parenthesis:
+	      if(real_shift) qwerty_fake_key=Kleftbracket;
+	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=K9;}
+	      break;
+	    case Kright_parenthesis:
+	      if(real_shift) qwerty_fake_key=Krightbracket;
+	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=K0;}
+	      break;
+	    case Kleftbracket:
+	      if(real_shift) {qwerty_fake_key=Ksurr3; qwerty_fake_shift=0;} break;
+	    case Krightbracket:
+	      if(real_shift) {qwerty_fake_key=Ksurr3;} break;
+	    case Kquestionmark:
+	      if(real_shift) qwerty_fake_key=Kcomma;
+	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kslash;}
+	      break;
+	    case Ksemicolon:
+	      if(real_shift) qwerty_fake_key=K7; break;
+	    case Kcolon:
+	      if(real_shift) qwerty_fake_key=Kbackslash;
+	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Ksemicolon;}
+	      break;
+	    case Kbackslash:
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr5;
+		qwerty_fake_shift=0;
+		qwerty_fake_altgr=MKr_altgr;
+	      }
+	      break;
+	    case Fscrlk:
+	      if(real_shift && (qwerty_fake_key==lastkey)) {qwerty_fake_key=Fcapslk; qwerty_fake_shift=0;} break;
+	    case Ffnenter: //Legacy programs do their own interpretation of smrtntr as fnenter or eolchar, and there's no standard way to give an explicit fnenter or eolchar signal, so until I have my virtual keyboard mechanism to translate fnenter to smrtntr for legacy programs, the easiest hack is to translate it in the physical keyboard (which means that I don't have fnenter separate from smrtntr even for Emacs).
+	      if(!real_shift) qwerty_fake_key=Ksmrtntr; break;
+	    }
 	}
 	krb.mod_keys=(mod_keys&~(MKl_shft|MKr_shft)&~(MKl_ctrl|MKr_ctrl)&~MKl_alt&~MKr_altgr)|qwerty_fake_shift|qwerty_fake_ctrl|qwerty_fake_alt|qwerty_fake_altgr;
 	krb.nonmod_keys[0]=qwerty_fake_key;
