@@ -170,8 +170,8 @@ uint8_t logical_key_matrix[]={
 Kna, K0, K1, K2, K3, K4, K5, K6, K7, K8, K9, Kna,
 Kleft_doublequote, Kdash, Kp, Ku, Kc, Kb, Kk, Kd, Kl, Ky, Kz, Kright_doublequote,
 Kleft_parenthesis, Ka, Kn, Ki, Ks, Kw, Kg, Kt, Kh, Ko, Kr, Kright_parenthesis,
-Kleftbracket, Kslash, Kperiod, Kcomma, Kf, Kequal, Kq, Km, Kv, Kapostrophe, Kx, Krightbracket,
-Kna, Kbacktick, Kquestionmark, Ksemicolon, Kasterisk, Kl_ctrl, Kl_win, Kj, Kcolon, Kunderline, Kbackslash, Kna,
+Kleftbracket, Kslash, Kperiod, Kcomma, Kf, Kunderline, Kq, Km, Kv, Kapostrophe, Kx, Krightbracket,
+Kna, Kbacktick, Kquestionmark, Ksemicolon, Kasterisk, Kl_ctrl, Kl_win, Kj, Kcolon, Kequal, Kbackslash, Kna,
 Kna, Kl_shft, Ke, Kindent, Ksmrttab, Kr_altgr, Kl_alt, Ksmrtntr, Kdelback, Kspace, Kr_fn, Kna
 };
 

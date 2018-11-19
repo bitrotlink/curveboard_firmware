@@ -376,7 +376,7 @@ void fill_qwerty_fake_krb(void) {
 	      }
 	      break;
 	    case Kequal:
-	      if(real_shift) qwerty_fake_key=Ksurr4; break;
+	      if(real_shift) qwerty_fake_key=Kperiod; break;
 	    case Kasterisk: //X apparently ignores the shift of KP_Multiply, so I have to work around it here.
 	      if(real_shift) {
 		qwerty_fake_key=Ksurr5;
@@ -386,7 +386,7 @@ void fill_qwerty_fake_krb(void) {
 	      if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Ksurr5;}
 	      break;
 	    case Kunderline:
-	      if(real_shift) qwerty_fake_key=Kperiod;
+	      if(real_shift) qwerty_fake_key=Kbacktick;
 	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kdash;}
 	      break;
 	    case Kdash:
@@ -396,7 +396,7 @@ void fill_qwerty_fake_krb(void) {
 	      }
 	      break;
 	    case Kslash:
-	      if(real_shift) qwerty_fake_key=Kbacktick; break;
+	      if(real_shift) qwerty_fake_key=Ksurr4; break;
 	    case Kperiod:
 	      if(real_shift) qwerty_fake_key=K1; break;
 	    case Kcomma:
