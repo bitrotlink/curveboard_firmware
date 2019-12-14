@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <avr/interrupt.h>
 
+// http://homepage.hispeed.ch/peterfleury/doxygen/avr-gcc-libraries/group__pfleury__ic2master.html
+// http://homepage.hispeed.ch/peterfleury/i2cmaster.zip
+#include "I2C/i2cmaster.h"
+
 #include "keydefs.h"
 #include "inter_AVR_protocol.h"
 
@@ -33,6 +37,18 @@
 #define RETRY_IF_NO_ACK 1 //Disable this when debugging to prevent spewing retries if I'm not sending acks.
 #define USE_QWERTY_FAKES 1 //Send scancodes according to standard qwerty, using fake keys and fake presses of shift, so that the mapping in the OS can be standard qwerty, and brain-dead VMMs such as VMware which provide only PS/2 virtual keyboards to VMs will pass all the keys (zyld natively uses USB HID page 7 codes which have no PS/2 counterparts, so VMware drops those keys when sent to VMs). For example, when colon is pressed, instead of sending zyld native 0xcb (which _is_ the standard code for colon, though X on Debian 6 doesn't recognize it), send shift-semicolon.
 #define MAX_ROLLOVER 16
+
+#define CAP1188 0x29 // I2C address
+#define CAP1188_SENSOR_LED_LINK_ADDR 0x72
+#define CAP1188_SENSOR_LED_LINK_VAL 0xff // Link all sensors to LEDs
+#define CAP1188_MULTITOUCH_ADDR 0x2a
+#define CAP1188_MULTITOUCH_VAL 0x84 // Enable two simultaneous keypresses
+#define CAP1188_KEYREPEAT_ADDR 0x28
+#define CAP1188_KEYREPEAT_VAL 0 // Disable key autorepeat
+#define CAP1188_KEYENABLE_ADDR 0x21
+#define CAP1188_KEYENABLE_VAL 0xa0 // Enable just two keys, for faster sampling cycle period
+#define CAP1188_AVGSAMPLCONF_ADDR 0x24
+#define CAP1188_AVGSAMPLCONF_VAL 0x38 // Set cycle time to 35ms
 
 unsigned int debounce_counter_init_press;
 unsigned int debounce_counter_init_release;
@@ -86,6 +102,31 @@ void fletcher16( uint8_t *checkA, uint8_t *checkB, uint8_t *data, size_t len )
         sum2 = (sum2 & 0xff) + (sum2 >> 8);
         *checkA = (uint8_t)sum1;
         *checkB = (uint8_t)sum2;
+}
+
+uint8_t captouch_read(uint8_t addr) {
+  i2c_start(CAP1188+I2C_WRITE);
+  i2c_write(addr);
+  i2c_stop();
+  i2c_start(CAP1188+I2C_READ);
+  uint8_t retval = i2c_readNak();
+  i2c_stop();
+  return retval;
+}
+
+void captouch_write(uint8_t addr, uint8_t val) {
+  i2c_start(CAP1188+I2C_WRITE);
+  i2c_write(addr);
+  i2c_write(val);
+  i2c_stop();
+}
+
+void captouch_init() {
+  captouch_write(CAP1188_SENSOR_LED_LINK_ADDR, CAP1188_SENSOR_LED_LINK_VAL);
+  captouch_write(CAP1188_MULTITOUCH_ADDR, CAP1188_MULTITOUCH_VAL);
+  captouch_write(CAP1188_KEYREPEAT_ADDR, CAP1188_KEYREPEAT_VAL);
+  captouch_write(CAP1188_KEYENABLE_ADDR, CAP1188_KEYENABLE_VAL);
+  captouch_write(CAP1188_AVGSAMPLCONF_ADDR, CAP1188_AVGSAMPLCONF_VAL);
 }
 
 uint16_t read_kb_line() { // Return new keypad column state.
@@ -619,4 +660,3 @@ int main (void)
 	}
 	return 0;
 }
-

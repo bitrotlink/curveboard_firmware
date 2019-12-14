@@ -171,15 +171,17 @@ Kna, K0, K1, K2, K3, K4, K5, K6, K7, K8, K9, Kna,
 Kleft_doublequote, Kdash, Kp, Ku, Kc, Kb, Kk, Kd, Kl, Ky, Kz, Kright_doublequote,
 Kleft_parenthesis, Ka, Kn, Ki, Ks, Kw, Kg, Kt, Kh, Ko, Kr, Kright_parenthesis,
 Kleftbracket, Kslash, Kperiod, Kcomma, Kf, Kunderline, Kq, Km, Kv, Kapostrophe, Kx, Krightbracket,
-Kna, Kbacktick, Kquestionmark, Ksemicolon, Kasterisk, Kl_ctrl, Kl_win, Kj, Kcolon, Kequal, Kbackslash, Kna,
-Kna, Kl_shft, Ke, Kindent, Ksmrttab, Kr_altgr, Kl_alt, Ksmrtntr, Kdelback, Kspace, Kr_fn, Kna
+Kna, Kbacktick, Kquestionmark, Ksemicolon, Kasterisk, Ke, Kspace, Kj, Kcolon, Kequal, Kbackslash, Kna,
+Kna, Kl_shft, Kdelback, Ksmrttab, Kl_win, Kl_ctrl, Kl_alt, Kr_altgr, Ksmrtntr, Kindent, Kr_fn, Kna
 };
+ 
 
 uint8_t logical_fn_matrix[]={
 Fna, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, Fna,
 F10, Fcclcase, Fexecmd, Fswchbuf, Fcmitbuf, Fclsebuf, Fpgup, Fbw_word, Fup, Fend_wrd, F11, F12,
 F13, Fuarg, Fcopy, Fpaste, Fisearch, Fwebsrch, Fselsexp, Fleft, Fdown, Fright, Fesc, F14,
 Fprintsc, Fwgprefx, Fundo, Frevmark, Fsetmark, Fgomark, Fexchpm, Fhome, Fpgdn, Fend, Ffindchr, Fpause,
-Fna, Fscrlk, Fhlpprfx, Frepedit, Fnxtmtch, Kl_ctrl, Kl_win, Flnkback, Fbmklist, Flinkfwd, Fctxmenu, Fna,
-Fna, Kl_shft, Fcut, Findsexp, Fnextwin, Kr_altgr, Kl_alt, Ffnenter, Fdelete, Ffw_word, Kr_fn, Fna
+Fna, Fscrlk, Fhlpprfx, Frepedit, Fnxtmtch, Fcut, Ffw_word, Flnkback, Fbmklist, Flinkfwd, Fctxmenu, Fna,
+Fna, Kl_shft, Fdelete, Fnextwin, Kl_win, Kl_ctrl, Kl_alt, Kr_altgr, Ffnenter, Findsexp, Kr_fn, Fna
 };
+
