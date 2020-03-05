@@ -23,7 +23,7 @@
 
 //I wrote:
 #define UBRR UBRR0
-#define RXEN RXEN0 
+#define RXEN RXEN0
 #define TXEN TXEN0
 #define UCSZ0 UCSZ00
 
@@ -218,7 +218,7 @@ void update_key(int i, int j, int k) {
 		kb[i]=setbit(kb[i], j, prevstates[k]); //Key is stable, so update kb.
 		i_logical_key=convert_electronic_matrix_to_logical(i, j);
 		logical_key=fn_pressed?logical_fn_matrix[i_logical_key]:logical_key_matrix[i_logical_key];
-		switch(logical_key_matrix[i_logical_key]) {
+		switch(logical_key) {
 			case Kl_ctrl: modkey=MKl_ctrl; break;
 			case Kl_shft: modkey=MKl_shft; break;
 			case Kl_alt: modkey=MKl_alt; break;
@@ -246,7 +246,12 @@ void update_key(int i, int j, int k) {
 			if(!prevstates[k]) { //Key pressed.
 				presscounts[k]++;
 				mod_keys|=modkey;
-			} else mod_keys&=~modkey; //Key released.
+			} else {
+			  mod_keys&=~modkey; //Key released.
+			  if(Altgr_win_are_same_physical_key &&
+			      ((modkey==MKr_altgr) || (modkey==MKl_win)))
+			    mod_keys&=(~MKr_altgr & ~MKl_win); // Releasing either releases both if they're the same key
+			}
 			if(!lastkey_stillpressed) kbchanged=1; //Don't report change of modifier keys while last non_mod key is still pressed, because such a condition is caused by asymmetric chord release (e.g. user presses shift, then a symbol key, then releases shift before releasing the symbol key) rather than by intentional press of the non-modified key immediately following the modified key.
 		} else { //Non-mod key.
 			if(!prevstates[k]) { //Key pressed.
@@ -359,22 +364,19 @@ void fill_qwerty_fake_krb(void) {
 	qwerty_fake_ctrl=mod_keys&(MKl_ctrl|MKr_ctrl);
 	qwerty_fake_key=lastkey;
 	if(lastkey==Fswchbuf) {qwerty_fake_key=0; krb.page_C_key=0x202;}
-	else if(lastkey==Fclsebuf) {qwerty_fake_key=0; krb.page_C_key=0x203;}
-	else if(lastkey==Fcmitbuf) {qwerty_fake_key=0; krb.page_C_key=0x207;}
+	else if(lastkey==Fclose) {qwerty_fake_key=0; krb.page_C_key=0x203;}
+	else if(lastkey==Fcommit) {qwerty_fake_key=0; krb.page_C_key=0x207;}
 	else if(lastkey==Fwebsrch) {qwerty_fake_key=0; krb.page_C_key=0x221;}
 	else if(lastkey==Flnkback) {qwerty_fake_key=0; krb.page_C_key=0x224;}
 	else if(lastkey==Flinkfwd) {qwerty_fake_key=0; krb.page_C_key=0x225;}
-	else if(lastkey==Fbmklist) {qwerty_fake_key=0; krb.page_C_key=0x022a;}
+	else if(lastkey==Fbmklist) {qwerty_fake_key=0; krb.page_C_key=0x22a;}
+	else if(lastkey==Fcalc) {qwerty_fake_key=0; krb.page_C_key=0x192;}
 	//Coding bw_word and end_wrd as ctrl-left and -right because those are standard widely-supported codings.
-	else if(lastkey==Fbw_word) {qwerty_fake_key=Fleft; qwerty_fake_ctrl=MKl_ctrl;}
-	else if(lastkey==Fend_wrd) {qwerty_fake_key=Fright; qwerty_fake_ctrl=MKl_ctrl;}
+	else if(lastkey==Fbw_word) {qwerty_fake_key=Fleft; qwerty_fake_ctrl=MKr_ctrl;}
+	else if(lastkey==Fend_wrd) {qwerty_fake_key=Fright; qwerty_fake_ctrl=MKr_ctrl;}
 	//Coding the following ctrl codes because I'm out of suitable USB codes.
-	else if(lastkey==Fexecmd) {qwerty_fake_key=Fctxmenu; qwerty_fake_ctrl=MKl_ctrl;}
-	else if(lastkey==Fselsexp) {qwerty_fake_key=Fsetmark;  qwerty_fake_ctrl=MKl_ctrl;}
-	else if(lastkey==Fnxtmtch) {qwerty_fake_key=Fisearch; qwerty_fake_ctrl=MKl_ctrl;}
-	else if(lastkey==Fnextwin) {qwerty_fake_key=Ksmrttab; qwerty_fake_ctrl=MKl_ctrl;}
-	else if(lastkey==Findsexp) {qwerty_fake_key=Kindent; qwerty_fake_ctrl=MKl_ctrl;}
-	else if(lastkey==Fwgprefx) {qwerty_fake_key=Frevmark; qwerty_fake_ctrl=MKl_ctrl;}
+	else if(lastkey==Fnextwin) {qwerty_fake_key=Ksmrttab; qwerty_fake_ctrl=MKr_ctrl;}
+	else if(lastkey==Findsexp) {qwerty_fake_key=Kindent; qwerty_fake_ctrl=MKr_ctrl;}
 	else {
 	  if(real_alt) switch(lastkey) {
 	    case Fscrlk:
@@ -382,11 +384,11 @@ void fill_qwerty_fake_krb(void) {
 	    case Fprintsc:
 	      qwerty_fake_key=Fsysreq; qwerty_fake_alt=0; break;
 	    case Fpause:
-	      qwerty_fake_ctrl=MKl_ctrl; qwerty_fake_alt=0; break; //Alt-pause (zyld _break_) is qwerty ctrl-pause.
+	      qwerty_fake_ctrl=MKr_ctrl; qwerty_fake_alt=0; break; //Alt-pause (zyld _break_) is qwerty ctrl-pause.
 	    }
 	  if(!(mod_keys&MKr_altgr)) switch(lastkey) {
 	    case K0:
-	      if(real_shift) qwerty_fake_key=Kequal; break;
+	      if(real_shift) {qwerty_fake_key=Kequal;} break;
 	    case K1:
 	      if(real_shift) qwerty_fake_key=K5; break;
 	    case K5:
@@ -421,13 +423,22 @@ void fill_qwerty_fake_krb(void) {
 	    case Kasterisk: //X apparently ignores the shift of KP_Multiply, so I have to work around it here.
 	      if(real_shift) {
 		qwerty_fake_key=Ksurr5;
+	      } else { // Not strictly necessary, since keypad asterisk does generally work, but xterm sometimes wigs out and stops recognizing it, so using Qwerty's ordinary shift-8 avoids the problem
+		qwerty_fake_key=K8;
+		qwerty_fake_shift=MKl_shft;
 	      }
 	      break;
-	    case Kbacktick:
-	      if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Ksurr5;}
+	    case Kplus: // Don't ever pass shift-plus since xterm interprets it as special
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr3;
+		qwerty_fake_altgr=MKr_altgr;
+	      }
 	      break;
 	    case Kunderline:
-	      if(real_shift) qwerty_fake_key=Kbacktick;
+	      if(real_shift) {
+		qwerty_fake_key=Kbacktick;
+		qwerty_fake_shift=0;
+	      }
 	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kdash;}
 	      break;
 	    case Kdash:
@@ -465,17 +476,16 @@ void fill_qwerty_fake_krb(void) {
 	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Ksemicolon;}
 	      break;
 	    case Kbackslash:
-	      if(real_shift) {
-		qwerty_fake_key=Ksurr5;
-		qwerty_fake_shift=0;
-		qwerty_fake_altgr=MKr_altgr;
-	      }
-	      break;
+	      if(real_shift) qwerty_fake_key=Kbacktick; break;
 	    case Fscrlk:
 	      if(real_shift && (qwerty_fake_key==lastkey)) {qwerty_fake_key=Fcapslk; qwerty_fake_shift=0;} break;
-	    case Ffnenter: //Legacy programs do their own interpretation of smrtntr as fnenter or eolchar, and there's no standard way to give an explicit fnenter or eolchar signal, so until I have my virtual keyboard mechanism to translate fnenter to smrtntr for legacy programs, the easiest hack is to translate it in the physical keyboard (which means that I don't have fnenter separate from smrtntr even for Emacs).
-	      if(!real_shift) qwerty_fake_key=Ksmrtntr; break;
 	    }
+	  if(real_shift && (mod_keys&MKr_altgr) && (lastkey==Kasterisk))
+	    qwerty_fake_key=Ksurr5;
+	  if(real_shift && (mod_keys&MKr_altgr) && (lastkey==Kplus)) {
+	    qwerty_fake_key=Ksurr3;
+	    qwerty_fake_shift=0;
+	  }
 	}
 	krb.mod_keys=(mod_keys&~(MKl_shft|MKr_shft)&~(MKl_ctrl|MKr_ctrl)&~MKl_alt&~MKr_altgr)|qwerty_fake_shift|qwerty_fake_ctrl|qwerty_fake_alt|qwerty_fake_altgr;
 	krb.nonmod_keys[0]=qwerty_fake_key;
@@ -608,6 +618,9 @@ void fill_and_send_krb(int is_retry) {
 
 int main (void)
 {
+  //Can't use these since SDA and SCL for I2C are the same as A4 and A5, which are already needed for columns.
+  //i2c_init();
+  //captouch_init();
 	int i;
 	uint8_t ack;
 	DDRB&=~0x1e; DDRC&=~0x3f; //Set columns to input
