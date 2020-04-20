@@ -95,7 +95,7 @@
 #define Fhlpprfx	0x75
 #define Fexecmd		0x76 //SunProps, aka Keyboard Menu
 #define Fsetmark	0x77 //SunFront, aka Keyboard Select
-#define Kindent		0x78 //Cancel, aka Keyboard Stop
+#define Findent		0x78 //Cancel, aka Keyboard Stop
 #define Frepeat	0x79
 #define Fundo	0x7A
 #define Fcut	0x7B
@@ -159,7 +159,6 @@
 #define Fbw_word	0xF0
 #define Fend_wrd	0xF1
 #define Fnextwin	0xF2
-#define Findsexp	0xF3
 
 //Nonstandard Zyld keys, using reserved scancodes, with processing done exclusively in the keyboard; no scancodes ever sent.
 #define Kl_fn	0xF5 //Not present on Zyld.
@@ -179,8 +178,8 @@ Kna, K0, K1, K2, K3, K4, K5, K6, K7, K8, K9, Kna,
 Kleft_doublequote, Kdash, Kp, Ku, Kc, Kb, Kk, Kd, Kl, Ky, Kz, Kright_doublequote,
 Kleft_parenthesis, Ka, Kn, Ki, Ks, Kw, Kg, Kt, Kh, Ko, Kr, Kright_parenthesis,
 Kleftbracket, Kslash, Kperiod, Kcomma, Kf, Kbackslash, Kq, Km, Kv, Kapostrophe, Kx, Krightbracket,
-Kna, Kunderline, Kquestionmark, Ksemicolon, Kasterisk, Ke, Kspace, Kj, Kcolon, Kequal, Kplus, Kna,
-Kna, Kl_shft, Kdelback, Ksmrttab, Kr_altgr, Kna, Kl_alt, Kr_ctrl, Ksmrtntr, Kindent, Kr_fn, Kna
+Kna, Kbacktick, Kquestionmark, Ksemicolon, Kasterisk, Ke, Kspace, Kj, Kcolon, Kequal, Kplus, Kna,
+Kna, Kl_shft, Kdelback, Ksmrttab, Kr_altgr, Kna, Kl_alt, Kr_ctrl, Ksmrtntr, Kunderline, Kr_fn, Kna
 };
 
 uint8_t logical_fn_matrix[]={
@@ -189,5 +188,5 @@ F10, Fcase, Fexecmd, Fswchbuf, Fcommit, Fcalc, Fpgup, Fbw_word, Fup, Fend_wrd, F
 Fslrpbck, Fuarg, Fcopy, Fpaste, Fisearch, Fwebsrch, Fselsexp, Fleft, Fdown, Fright, Fesc, Fslrpfwd,
 Fprintsc, Frender, Fundo, Frevmark, Fsetmark, Fclose, Fexchpm, Fhome, Fpgdn, Fend, Ffindchr, Fpause,
 Fna, Fscrlk, Fhlpprfx, Frepeat, Fgomark, Fcut, Ffw_word, Flnkback, Fbmklist, Flinkfwd, Fctxmenu, Fna,
-Fna, Kl_shft, Fdelete, Fnextwin, Kl_win, Fna, Kl_alt, Kr_ctrl, Ffnenter, Findsexp, Kr_fn, Fna
+Fna, Kl_shft, Fdelete, Fnextwin, Kl_win, Fna, Kl_alt, Kr_ctrl, Ffnenter, Findent, Kr_fn, Fna
 };

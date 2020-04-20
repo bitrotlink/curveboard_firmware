@@ -376,7 +376,6 @@ void fill_qwerty_fake_krb(void) {
 	else if(lastkey==Fend_wrd) {qwerty_fake_key=Fright; qwerty_fake_ctrl=MKr_ctrl;}
 	//Coding the following ctrl codes because I'm out of suitable USB codes.
 	else if(lastkey==Fnextwin) {qwerty_fake_key=Ksmrttab; qwerty_fake_ctrl=MKr_ctrl;}
-	else if(lastkey==Findsexp) {qwerty_fake_key=Kindent; qwerty_fake_ctrl=MKr_ctrl;}
 	else {
 	  if(real_alt) switch(lastkey) {
 	    case Fscrlk:
@@ -434,12 +433,12 @@ void fill_qwerty_fake_krb(void) {
 		qwerty_fake_altgr=MKr_altgr;
 	      }
 	      break;
+	    case Kbacktick:
+	      if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Ksurr5;}
+	      break;
 	    case Kunderline:
-	      if(real_shift) {
-		qwerty_fake_key=Kbacktick;
-		qwerty_fake_shift=0;
-	      }
-	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kdash;}
+	      // Regardless of real_shift, so that both unshifted and shifted Kunderline produce underline
+	      qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kdash;
 	      break;
 	    case Kdash:
 	      if(real_shift) {
@@ -452,7 +451,7 @@ void fill_qwerty_fake_krb(void) {
 	    case Kperiod:
 	      if(real_shift) qwerty_fake_key=K1; break;
 	    case Kcomma:
-	      if(real_shift) {qwerty_fake_key=Ksurr4; qwerty_fake_shift=0;} break;
+	      if(real_shift) qwerty_fake_key=Kbacktick; break;
 	    case Kleft_parenthesis:
 	      if(real_shift) qwerty_fake_key=Kleftbracket;
 	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=K9;}
@@ -476,7 +475,7 @@ void fill_qwerty_fake_krb(void) {
 	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Ksemicolon;}
 	      break;
 	    case Kbackslash:
-	      if(real_shift) qwerty_fake_key=Kbacktick; break;
+	      if(real_shift) {qwerty_fake_key=Ksurr4; qwerty_fake_shift=0;} break;
 	    case Fscrlk:
 	      if(real_shift && (qwerty_fake_key==lastkey)) {qwerty_fake_key=Fcapslk; qwerty_fake_shift=0;} break;
 	    }
