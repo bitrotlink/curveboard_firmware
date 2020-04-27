@@ -95,7 +95,7 @@
 #define Fhlpprfx	0x75
 #define Fexecmd		0x76 //SunProps, aka Keyboard Menu
 #define Fsetmark	0x77 //SunFront, aka Keyboard Select
-#define Findent		0x78 //Cancel, aka Keyboard Stop
+#define Fcase		0x78 //Cancel, aka Keyboard Stop
 #define Frepeat	0x79
 #define Fundo	0x7A
 #define Fcut	0x7B
@@ -132,17 +132,17 @@
 #define Ksurr5	0x94 //Keyboard Lang 5
 
 //Nonstandard Zyld keys, using standard function key scancodes
-#define Fcase		0x68 //F13
-#define Fslrpbck	0x69 //F14
-#define Fuarg		0x6A //F15
-#define Fselsexp	0x6B //F16
-#define Fslrpfwd	0x6C //F17
-#define Frender		0x6D //F18
-#define Frevmark	0x6E //F19
-#define Fexchpm		0x6F //F20
-#define Ffindchr	0x70 //F21
-#define Fgomark		0x71 //F22
-#define Ffw_word	0x72 //F23
+#define Fslrpbck	0x68 //F13
+#define Fuarg		0x69 //F14
+#define Fselsexp	0x6A //F15
+#define Fslrpfwd	0x6B //F16
+#define Frender		0x6C //F17
+#define Frevmark	0x6D //F18
+#define Fexchpm		0x6E //F19
+#define Ffindchr	0x6F //F20
+#define Fgomark		0x70 //F21
+#define Ffw_word	0x71 //F22
+#define Findent		0x72 //F23
 #define F0		0x73 //F24
 
 //Nonstandard Zyld keys, using reserved scancodes. fill_qwerty_fake_krb() translates all these to standard codes using page C codes.
@@ -186,7 +186,7 @@ uint8_t logical_fn_matrix[]={
 Fna, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, Fna,
 F10, Fcase, Fexecmd, Fswchbuf, Fcommit, Fcalc, Fpgup, Fbw_word, Fup, Fend_wrd, F11, F12,
 Fslrpbck, Fuarg, Fcopy, Fpaste, Fisearch, Fwebsrch, Fselsexp, Fleft, Fdown, Fright, Fesc, Fslrpfwd,
-Fprintsc, Frender, Fundo, Frevmark, Fsetmark, Fclose, Fexchpm, Fhome, Fpgdn, Fend, Ffindchr, Fpause,
+Fpause, Frender, Fundo, Frevmark, Fsetmark, Fclose, Fexchpm, Fhome, Fpgdn, Fend, Ffindchr, Fprintsc,
 Fna, Fscrlk, Fhlpprfx, Frepeat, Fgomark, Fcut, Ffw_word, Flnkback, Fbmklist, Flinkfwd, Fctxmenu, Fna,
 Fna, Kl_shft, Fdelete, Fnextwin, Kl_win, Fna, Kl_alt, Kr_ctrl, Ffnenter, Findent, Kr_fn, Fna
 };
