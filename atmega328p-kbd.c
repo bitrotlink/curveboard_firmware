@@ -50,6 +50,9 @@
 #define CAP1188_AVGSAMPLCONF_ADDR 0x24
 #define CAP1188_AVGSAMPLCONF_VAL 0x38 // Set cycle time to 35ms
 
+int captouch_sync_limit;
+int do_sync;
+
 unsigned int debounce_counter_init_press;
 unsigned int debounce_counter_init_release;
 unsigned int retry_timer_init;
@@ -149,11 +152,17 @@ void set_line(int i) { //Set the selected line to output and drive it low, and s
 }
 
 void scan_kb() {
+	static int captouch_sync_count = 0;
 	int i, delay;
 	for(i=0; i<7; i++) { // Drive each row, one at a time, and read all columns after each drive.
 		set_line(i);
 		for(delay=0; delay<16; delay++) asm("nop"); //Without this (specifically, looping less than 8 times), the inter-line scanning runs fast enough that speed-intolerant breadboard wiring (or maybe it's the keypad itself) causes glitches, manifested by scan states not stabilizing when keys are pressed. Haven't tried yet with full keyboard, just with the 12-key keypad.
 		new_kb[i]=read_kb_line();
+	}
+	captouch_sync_count++;
+	if(captouch_sync_count>=30) {
+		captouch_sync_count=0;
+		PORTB ^= 0x20;
 	}
 }
 
@@ -236,6 +245,10 @@ void update_key(int i, int j, int k) {
 				if(logical_key==Kl_fn) l_fn_pressed=1;
 				else r_fn_pressed=1;
 				fn_pressed=1;
+				if(Altgr_win_are_same_physical_key && (mod_keys&MKr_altgr)) {
+				  mod_keys = (mod_keys & ~MKr_altgr) | MKl_win; // So that pressing win and fn order doesn't matter
+				  if(!lastkey_stillpressed) kbchanged=1;
+				}
 			} else {
 				if(logical_key==Kl_fn) l_fn_pressed=0;
 				else r_fn_pressed=0;
@@ -387,13 +400,21 @@ void fill_qwerty_fake_krb(void) {
 	    }
 	  if(!(mod_keys&MKr_altgr)) switch(lastkey) {
 	    case K0:
-	      if(real_shift) {qwerty_fake_key=Kequal;} break;
+	      if(real_shift) {qwerty_fake_key=Kequal;} else captouch_sync_limit=5; break;
 	    case K1:
-	      if(real_shift) qwerty_fake_key=K5; break;
+	      if(real_shift) qwerty_fake_key=K5; else {do_sync = 0;PORTB &= ~0x20;}; break;
+	    case K2:
+	      if(real_shift) qwerty_fake_key=Ksurr5; else do_sync = 1; break;
+	    case K3:
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr5;
+		qwerty_fake_shift=0;
+		qwerty_fake_altgr=MKr_altgr;
+	      }
+	      break;
 	    case K5:
 	      if(real_shift) {
-		qwerty_fake_key=Kcomma;
-		qwerty_fake_shift=0;
+		qwerty_fake_key=K3;
 	      }
 	      break;
 	    case K6:
@@ -419,9 +440,9 @@ void fill_qwerty_fake_krb(void) {
 	      break;
 	    case Kequal:
 	      if(real_shift) qwerty_fake_key=Kperiod; break;
-	    case Kasterisk: //X apparently ignores the shift of KP_Multiply, so I have to work around it here.
+	    case Kasterisk:
 	      if(real_shift) {
-		qwerty_fake_key=Ksurr5;
+		qwerty_fake_key=K2;
 	      } else { // Not strictly necessary, since keypad asterisk does generally work, but xterm sometimes wigs out and stops recognizing it, so using Qwerty's ordinary shift-8 avoids the problem
 		qwerty_fake_key=K8;
 		qwerty_fake_shift=MKl_shft;
@@ -431,7 +452,7 @@ void fill_qwerty_fake_krb(void) {
 	      if(real_shift) {
 		qwerty_fake_key=Ksurr3;
 		qwerty_fake_altgr=MKr_altgr;
-	      }
+	      } else captouch_sync_limit++;
 	      break;
 	    case Kbacktick:
 	      if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Ksurr5;}
@@ -444,7 +465,7 @@ void fill_qwerty_fake_krb(void) {
 	      if(real_shift) {
 		qwerty_fake_key=Ksurr4;
 		qwerty_fake_altgr=MKr_altgr;
-	      }
+	      } else captouch_sync_limit--;
 	      break;
 	    case Kslash:
 	      if(real_shift) qwerty_fake_key=Ksurr4; break;
@@ -620,6 +641,8 @@ int main (void)
   //Can't use these since SDA and SCL for I2C are the same as A4 and A5, which are already needed for columns.
   //i2c_init();
   //captouch_init();
+captouch_sync_limit=5;
+do_sync=1;
 	int i;
 	uint8_t ack;
 	DDRB&=~0x1e; DDRC&=~0x3f; //Set columns to input
