@@ -38,6 +38,8 @@
 #define USE_QWERTY_FAKES 1 //Send scancodes according to standard qwerty, using fake keys and fake presses of shift, so that the mapping in the OS can be standard qwerty, and brain-dead VMMs such as VMware which provide only PS/2 virtual keyboards to VMs will pass all the keys (zyld natively uses USB HID page 7 codes which have no PS/2 counterparts, so VMware drops those keys when sent to VMs). For example, when colon is pressed, instead of sending zyld native 0xcb (which _is_ the standard code for colon, though X on Debian 6 doesn't recognize it), send shift-semicolon.
 #define MAX_ROLLOVER 16
 
+#define CAPTOUCH_SYNC_PERIOD 30 // Number of kbd scan cycles per capacitive touch scan cycle. Setting this much lower than 30 makes the AT42QT1011 chips too finicky with multitouch.
+
 #define CAP1188 0x29 // I2C address
 #define CAP1188_SENSOR_LED_LINK_ADDR 0x72
 #define CAP1188_SENSOR_LED_LINK_VAL 0xff // Link all sensors to LEDs
@@ -50,9 +52,6 @@
 #define CAP1188_AVGSAMPLCONF_ADDR 0x24
 #define CAP1188_AVGSAMPLCONF_VAL 0x38 // Set cycle time to 35ms
 
-int captouch_sync_limit;
-int do_sync;
-
 unsigned int debounce_counter_init_press;
 unsigned int debounce_counter_init_release;
 unsigned int retry_timer_init;
@@ -64,8 +63,7 @@ uint16_t new_kb[7]; // New keypad state.
 unsigned int presscounts[70]; //Count how many times each key is pressed.
 unsigned int debouncecounters[70]; //Debounce countdown timer for each key. Wasteful to use a full byte since I'm only using a count of 4, but this simplifies the program.
 int prevstates[70]; //Previous state (possibly still bouncing) of key. Would be type bool, but avr-gcc bitches about it.
-int kbchanged; //Flag set (by debounce()) whenever kb changes.
-int fnchanged; //Flag set (by debounce()) whenever a fn key changes.
+int kbchanged; //Flag set (by update_key) whenever kb changes.
 unsigned int bouncecount; //Count of bounces (excluding genuine key state transitions).
 unsigned int phantomcount; //Count of phantom keypresses (key settling back on previously debounced value after bouncing).
 
@@ -84,6 +82,7 @@ int lastkey_stillpressed; //False either if no non-modifier keys pressed, or if 
 int fn_pressed; //Would be type bool, but avr-gcc bitches about it.
 int l_fn_pressed; //Left fn key.
 int r_fn_pressed;
+int real_alt_pressed; // Used to distinguish real alt key from sticky virtual alt set by special case of nextwin (fn-tab)
 
 //Copied from http://en.wikipedia.org/wiki/Fletcher%27s_checksum
 void fletcher16( uint8_t *checkA, uint8_t *checkB, uint8_t *data, size_t len )
@@ -141,8 +140,8 @@ uint16_t read_kb_line() { // Return new keypad column state.
 
 void set_line(int i) { //Set the selected line to output and drive it low, and set all other lines to input and enable pullup resistors.
 	int lineB=0, lineD=0;
-		if(i<6) lineD=1<<(i+2); //Pins 2-7 of port D (Arduino pins digital 2 through digital 7) are rows 0-6.
-		else lineB=1; //Pin 0 of port B (Arduino pin digital 8) is row 7.
+		if(i<6) lineD=1<<(i+2); //Pins 2-7 of port D (Arduino pins digital 2 through digital 7) are rows 0-5.
+		else lineB=1; //Pin 0 of port B (Arduino pin digital 8) is row 6.
 		DDRD&=3; //Set all rows to input, but leave pins 0 and 1 alone since Arduino uses the UART.
 		DDRB&=0xfe;
 		PORTD=(PORTD&3)|((~lineD)&0xfc); // Set the selected line to drive low when set to output, and enable pullup resistors on all the input lines so they don't float (though floating doesn't matter).
@@ -160,9 +159,9 @@ void scan_kb() {
 		new_kb[i]=read_kb_line();
 	}
 	captouch_sync_count++;
-	if(captouch_sync_count>=30) {
+	if(captouch_sync_count>=CAPTOUCH_SYNC_PERIOD) {
 		captouch_sync_count=0;
-		PORTB ^= 0x20;
+		PORTB^=0x20; // Toggle the AT42QT1011 chips' sync inputs (shift key's directly, and fn key's via RC delay) to initiate capacitive touch sense bursts
 	}
 }
 
@@ -231,11 +230,11 @@ void update_key(int i, int j, int k) {
 			case Kl_ctrl: modkey=MKl_ctrl; break;
 			case Kl_shft: modkey=MKl_shft; break;
 			case Kl_alt: modkey=MKl_alt; break;
-			case Kl_win: modkey=MKl_win; break;
+			case Kl_suplm: modkey=MKl_suplm; break;
 			case Kr_ctrl: modkey=MKr_ctrl; break;
 			case Kr_shft: modkey=MKr_shft; break;
 			case Kr_altgr: modkey=MKr_altgr; break;
-			case Kr_win: modkey=MKr_win; break;
+			case Kr_suplm: modkey=MKr_suplm; break;
 			case Kl_fn: fnkey=1; break;
 			case Kr_fn: fnkey=1; break;
 		}
@@ -245,25 +244,32 @@ void update_key(int i, int j, int k) {
 				if(logical_key==Kl_fn) l_fn_pressed=1;
 				else r_fn_pressed=1;
 				fn_pressed=1;
-				if(Altgr_win_are_same_physical_key && (mod_keys&MKr_altgr)) {
-				  mod_keys = (mod_keys & ~MKr_altgr) | MKl_win; // So that pressing win and fn order doesn't matter
+				if(Altgr_suplm_are_same_physical_key && (mod_keys&MKr_altgr)) {
+				  mod_keys = (mod_keys & ~MKr_altgr) | MKr_suplm; // So that pressing suplm and fn order doesn't matter
 				  if(!lastkey_stillpressed) kbchanged=1;
 				}
 			} else {
 				if(logical_key==Kl_fn) l_fn_pressed=0;
 				else r_fn_pressed=0;
 				fn_pressed=l_fn_pressed|r_fn_pressed;
+				if((!fn_pressed) &&
+				   (mod_keys&MKl_alt) &&
+				   (!real_alt_pressed)) {
+				  mod_keys &= ~MKl_alt; // If sticky virtual alt is set, release it when fn is released
+				  if(!lastkey_stillpressed) kbchanged=1;
+				}
 			}
-			fnchanged=1;
 		} else if(modkey) {
-			if(!prevstates[k]) { //Key pressed.
+			if(!prevstates[k]) { //Key pressed
 				presscounts[k]++;
 				mod_keys|=modkey;
-			} else {
-			  mod_keys&=~modkey; //Key released.
-			  if(Altgr_win_are_same_physical_key &&
-			      ((modkey==MKr_altgr) || (modkey==MKl_win)))
-			    mod_keys&=(~MKr_altgr & ~MKl_win); // Releasing either releases both if they're the same key
+				if(modkey==MKl_alt) real_alt_pressed = 1;
+			} else { //Key released
+			  mod_keys&=~modkey;
+			  if(modkey==MKl_alt) real_alt_pressed = 0;
+			  if(Altgr_suplm_are_same_physical_key &&
+			      ((modkey==MKr_altgr) || (modkey==MKr_suplm)))
+			    mod_keys&=(~MKr_altgr & ~MKr_suplm); // Releasing either releases both if they're the same key
 			}
 			if(!lastkey_stillpressed) kbchanged=1; //Don't report change of modifier keys while last non_mod key is still pressed, because such a condition is caused by asymmetric chord release (e.g. user presses shift, then a symbol key, then releases shift before releasing the symbol key) rather than by intentional press of the non-modified key immediately following the modified key.
 		} else { //Non-mod key.
@@ -334,11 +340,11 @@ void fill_krb_from_scratch (void) {
 					case Kl_ctrl: modkey=MKl_ctrl; break;
 					case Kl_shft: modkey=MKl_shft; break;
 					case Kl_alt: modkey=MKl_alt; break;
-					case Kl_win: modkey=MKl_win; break;
+					case Kl_suplm: modkey=MKl_suplm; break;
 					case Kr_ctrl: modkey=MKr_ctrl; break;
 					case Kr_shft: modkey=MKr_shft; break;
 					case Kr_altgr: modkey=MKr_altgr; break;
-					case Kr_win: modkey=MKr_win; break;
+					case Kr_suplm: modkey=MKr_suplm; break;
 					case Kl_fn: fnkey=1; break;
 					case Kr_fn: fnkey=1; break;
 				}
@@ -368,43 +374,47 @@ void fill_qwerty_fake_krb(void) {
 	for(i=0; i<6; i++) krb.nonmod_keys[i]=0;
 	krb.page_C_key=0;
 	if(!lastkey_stillpressed) return;
-	int real_shift, qwerty_fake_shift, real_alt, qwerty_fake_alt, qwerty_fake_altgr, qwerty_fake_ctrl, qwerty_fake_key;
-	real_shift=mod_keys&(MKl_shft|MKr_shft);
-	real_alt=mod_keys&MKl_alt;
-	qwerty_fake_shift=real_shift;
-	qwerty_fake_alt=real_alt;
-	qwerty_fake_altgr=mod_keys&MKr_altgr;
-	qwerty_fake_ctrl=mod_keys&(MKl_ctrl|MKr_ctrl);
-	qwerty_fake_key=lastkey;
-	if(lastkey==Fswchbuf) {qwerty_fake_key=0; krb.page_C_key=0x202;}
+	int real_shift=mod_keys&(MKl_shft|MKr_shft);
+	int real_suplm=mod_keys&MKr_suplm;
+	int qwerty_fake_shift=real_shift;
+	int qwerty_fake_suplm=real_suplm;
+	int qwerty_fake_alt=mod_keys&MKl_alt;
+	int qwerty_fake_altgr=mod_keys&MKr_altgr;
+	int qwerty_fake_ctrl=mod_keys&(MKl_ctrl|MKr_ctrl);
+	int qwerty_fake_key=lastkey;
+	if(lastkey==Fopen) {qwerty_fake_key=0; krb.page_C_key=0x202;}
 	else if(lastkey==Fclose) {qwerty_fake_key=0; krb.page_C_key=0x203;}
 	else if(lastkey==Fcommit) {qwerty_fake_key=0; krb.page_C_key=0x207;}
-	else if(lastkey==Fwebsrch) {qwerty_fake_key=0; krb.page_C_key=0x221;}
-	else if(lastkey==Flnkback) {qwerty_fake_key=0; krb.page_C_key=0x224;}
-	else if(lastkey==Flinkfwd) {qwerty_fake_key=0; krb.page_C_key=0x225;}
-	else if(lastkey==Fbmklist) {qwerty_fake_key=0; krb.page_C_key=0x22a;}
+	else if(lastkey==Fweb) {qwerty_fake_key=0; krb.page_C_key=0x221;}
+	else if(lastkey==Fbaklink) {qwerty_fake_key=0; krb.page_C_key=0x224;}
+	else if(lastkey==Ffwdlink) {qwerty_fake_key=0; krb.page_C_key=0x225;}
+	else if(lastkey==Fwebmark) {qwerty_fake_key=0; krb.page_C_key=0x22a;}
 	else if(lastkey==Fcalc) {qwerty_fake_key=0; krb.page_C_key=0x192;}
 	//Coding bw_word and end_wrd as ctrl-left and -right because those are standard widely-supported codings.
-	else if(lastkey==Fbw_word) {qwerty_fake_key=Fleft; qwerty_fake_ctrl=MKr_ctrl;}
-	else if(lastkey==Fend_wrd) {qwerty_fake_key=Fright; qwerty_fake_ctrl=MKr_ctrl;}
-	//Coding the following ctrl codes because I'm out of suitable USB codes.
-	else if(lastkey==Fnextwin) {qwerty_fake_key=Ksmrttab; qwerty_fake_ctrl=MKr_ctrl;}
+	else if(lastkey==Fbakword) {qwerty_fake_key=Fleft; qwerty_fake_ctrl=MKr_ctrl;}
+	else if(lastkey==Fendword) {qwerty_fake_key=Fright; qwerty_fake_ctrl=MKr_ctrl;}
+	//Sticky alt-tab
+	else if(lastkey==Fnextwin) {
+	  qwerty_fake_key=Ktab;
+	  qwerty_fake_alt=MKl_alt;
+	  mod_keys|=MKl_alt; // Virtually stick alt, even if real alt key isn't pressed
+	}
 	else {
-	  if(real_alt) switch(lastkey) {
+	  if(real_suplm) switch(lastkey) {
 	    case Fscrlk:
-	      qwerty_fake_key=Finsert; qwerty_fake_alt=0; break;
+	      qwerty_fake_key=Finsert; qwerty_fake_suplm=0; break;
 	    case Fprintsc:
-	      qwerty_fake_key=Fsysreq; qwerty_fake_alt=0; break;
+	      qwerty_fake_key=Fsysreq; qwerty_fake_suplm=0; break;
 	    case Fpause:
-	      qwerty_fake_ctrl=MKr_ctrl; qwerty_fake_alt=0; break; //Alt-pause (zyld _break_) is qwerty ctrl-pause.
+	      qwerty_fake_ctrl=MKr_ctrl; qwerty_fake_suplm=0; break; //Suplm-pause (zyld _break_) is qwerty ctrl-pause.
 	    }
 	  if(!(mod_keys&MKr_altgr)) switch(lastkey) {
 	    case K0:
-	      if(real_shift) {qwerty_fake_key=Kequal;} else captouch_sync_limit=5; break;
+	      if(real_shift) {qwerty_fake_key=Kequal;} break;
 	    case K1:
-	      if(real_shift) qwerty_fake_key=K5; else {do_sync = 0;PORTB &= ~0x20;}; break;
+	      if(real_shift) qwerty_fake_key=K5; break;
 	    case K2:
-	      if(real_shift) qwerty_fake_key=Ksurr5; else do_sync = 1; break;
+	      if(real_shift) qwerty_fake_key=Ksurr5; break;
 	    case K3:
 	      if(real_shift) {
 		qwerty_fake_key=Ksurr5;
@@ -452,7 +462,7 @@ void fill_qwerty_fake_krb(void) {
 	      if(real_shift) {
 		qwerty_fake_key=Ksurr3;
 		qwerty_fake_altgr=MKr_altgr;
-	      } else captouch_sync_limit++;
+	      }
 	      break;
 	    case Kbacktick:
 	      if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Ksurr5;}
@@ -465,7 +475,7 @@ void fill_qwerty_fake_krb(void) {
 	      if(real_shift) {
 		qwerty_fake_key=Ksurr4;
 		qwerty_fake_altgr=MKr_altgr;
-	      } else captouch_sync_limit--;
+	      }
 	      break;
 	    case Kslash:
 	      if(real_shift) qwerty_fake_key=Ksurr4; break;
@@ -507,7 +517,8 @@ void fill_qwerty_fake_krb(void) {
 	    qwerty_fake_shift=0;
 	  }
 	}
-	krb.mod_keys=(mod_keys&~(MKl_shft|MKr_shft)&~(MKl_ctrl|MKr_ctrl)&~MKl_alt&~MKr_altgr)|qwerty_fake_shift|qwerty_fake_ctrl|qwerty_fake_alt|qwerty_fake_altgr;
+	krb.mod_keys=(mod_keys&~(MKl_shft|MKr_shft|MKl_ctrl|MKr_ctrl|MKl_alt|MKr_altgr|MKr_suplm))
+	  | qwerty_fake_shift|qwerty_fake_ctrl|qwerty_fake_alt|qwerty_fake_altgr|qwerty_fake_suplm;
 	krb.nonmod_keys[0]=qwerty_fake_key;
 }
 
@@ -641,14 +652,13 @@ int main (void)
   //Can't use these since SDA and SCL for I2C are the same as A4 and A5, which are already needed for columns.
   //i2c_init();
   //captouch_init();
-captouch_sync_limit=5;
-do_sync=1;
+  // So, instead of CAP1188, I'm using a pair of AT42QT1011 chips.
 	int i;
 	uint8_t ack;
 	DDRB&=~0x1e; DDRC&=~0x3f; //Set columns to input
 	PORTB|=0x1e; PORTC|=0x3f; //Enable pullup resistors
-	PORTB&=~0x20; DDRB|=0x20; //Enable output on Arduino LED and turn it off.
-	USARTInit(0); //416 is 2400bps, 103 is 9600bps, 0 is 1Mbps. Can't do 115200bps reliably because UART clock is divided from the arduino uno's 16MHz master clock, which can't get near enough to 115.2kHz. See table 20-6 on page 200 of http://www.atmel.com/Images/doc8271.pdf for details.
+	PORTB&=~0x20; DDRB|=0x20; //Enable output on Arduino LED and turn it off. As of 2020 June 2nd, this is now used for synchronizing the new AT42QT1011 chips.
+	USARTInit(0); //416 is 2400bps, 103 is 9600bps, 0 is 1Mbps. Can't do 115200bps reliably because UART clock is divided from the arduino uno's 16MHz master clock, which can't get near enough to 115.2kHz, but ironically can reliably do 1Mbps. See table 20-6 on page 200 of http://www.atmel.com/Images/doc8271.pdf for details.
 	debounce_counter_init_press=PRESS_BOUNCE_MS/SAMPLE_PERIOD_MS;
 	if(PRESS_BOUNCE_MS%SAMPLE_PERIOD_MS) debounce_counter_init_press++; //Round up.
 	debounce_counter_init_release=RELEASE_BOUNCE_MS/SAMPLE_PERIOD_MS;
@@ -662,7 +672,6 @@ do_sync=1;
 	}
 	for(i=0; i<70; i++) prevstates[i]=1; //Initialize all keys to inactive. Active low.
 	kbchanged=0;
-	fnchanged=0;
 	while(UCSRA & (1<<RXC)) USARTReadChar(); //Flush garbage received during startup.
 	//USARTWriteChar(0xff); //debug. Inject intentional garbage to ensure it's handled ok.
 	while(1) {

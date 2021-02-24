@@ -2,11 +2,11 @@
 #define MKl_ctrl 1
 #define MKl_shft 2
 #define MKl_alt 4
-#define MKl_win 8
+#define MKl_suplm 8
 #define MKr_ctrl 0x10
 #define MKr_shft 0x20
 #define MKr_altgr 0x40
-#define MKr_win 0x80
+#define MKr_suplm 0x80
 
 //USB HID page 7 scancodes. Based on http://www.freebsddiary.org/APC/usb_hid_usages.php
 #define Ka	0x04
@@ -45,10 +45,10 @@
 #define K8	0x25
 #define K9	0x26
 #define K0	0x27
-#define Ksmrtntr	0x28 // Standard enter (return)
+#define Kreturn	0x28
 #define Fesc	0x29
 #define Kdelback	0x2A
-#define Ksmrttab	0x2B
+#define Ktab	0x2B
 #define Kspace	0x2C
 #define Kdash	0x2D
 #define Kequal	0x2E
@@ -79,29 +79,29 @@
 #define Fpause	0x48
 #define Finsert	0x49
 #define Fhome	0x4A
-#define Fpgup	0x4B
+#define Fpageup	0x4B
 #define Fdelete	0x4C
 #define Fend	0x4D
-#define Fpgdn	0x4E
+#define Fpagedn	0x4E
 #define Fright	0x4F
 #define Fleft	0x50
 #define Fdown	0x51
 #define Fup	0x52
 #define Kasterisk	0x55
 #define Kplus	0x57
-#define Ffnenter	0x58 //Keypad enter. Added 2020 Jan 1st. Ffnenter was previously 0x71 (F22), since I didn't know the code for keypad enter.
+#define Fenter	0x58 //Keypad enter. Added 2020 Jan 1st.
 #define Fctxmenu	0x65
 //See below for F13-F24
-#define Fhlpprfx	0x75
-#define Fexecmd		0x76 //SunProps, aka Keyboard Menu
+#define Fhelp	0x75
+#define Fprog		0x76 //SunProps, aka Keyboard Menu
 #define Fsetmark	0x77 //SunFront, aka Keyboard Select
 #define Fcase		0x78 //Cancel, aka Keyboard Stop
-#define Frepeat	0x79
+#define Fburst	0x79
 #define Fundo	0x7A
 #define Fcut	0x7B
 #define Fcopy	0x7C
 #define Fpaste	0x7D
-#define Fisearch	0x7E
+#define Fsearch	0x7E
 #define Fgmute	0x7F
 #define Fgvolup	0x80
 #define Fgvoldn	0x81
@@ -109,14 +109,14 @@
 #define Kleft_parenthesis 0xB6
 #define Kright_parenthesis 0xB7
 #define Kcolon 0xCB
-#define Kl_ctrl	0xE0 //Not present on Zyld.
+#define Kl_ctrl	0xE0 //Not present on Zyld
 #define Kl_shft	0xE1
 #define Kl_alt	0xE2
-#define Kl_win	0xE3
+#define Kl_suplm	0xE3 //Not present on Zyld
 #define Kr_ctrl	0xE4
-#define Kr_shft	0xE5 //Not present on Zyld.
+#define Kr_shft	0xE5 //Not present on Zyld
 #define Kr_altgr	0xE6
-#define Kr_win	0xE7 //Not present on Zyld.
+#define Kr_suplm	0xE7
 
 //Nonstandard Zyld keys. fill_qwerty_fake_krb() translates these to shifts of standard Qwerty keys.
 #define Kquestionmark	0x88 //International2
@@ -132,37 +132,39 @@
 #define Ksurr5	0x94 //Keyboard Lang 5
 
 //Nonstandard Zyld keys, using standard function key scancodes
-#define Fslrpbck	0x68 //F13
-#define Fuarg		0x69 //F14
-#define Fselsexp	0x6A //F15
-#define Fslrpfwd	0x6B //F16
-#define Frender		0x6C //F17
-#define Frevmark	0x6D //F18
-#define Fexchpm		0x6E //F19
-#define Ffindchr	0x6F //F20
-#define Fgomark		0x70 //F21
-#define Ffw_word	0x71 //F22
+#define Fslurpbw	0x68 //F13
+#define Farg		0x69 //F14
+#define Fslurpfw	0x6A //F15
+#define Fxchmark		0x6B //F16
+#define Frevmark	0x6C //F17
+#define Fselexp	0x6D //F18
+#define Fgochar	0x6E //F19
+#define Fgomark		0x6F //F20
+#define Ffwdword	0x70 //F21
+#define Frender		0x71 //F22
 #define Findent		0x72 //F23
 #define F0		0x73 //F24
 
-//Nonstandard Zyld keys, using reserved scancodes. fill_qwerty_fake_krb() translates all these to standard codes using page C codes.
-#define Fswchbuf	0xE8
-#define Fclose		0xE9
-#define Fcommit		0xEA
-#define Fwebsrch	0xEB
-#define Flnkback	0xEC
-#define Flinkfwd	0xED
-#define Fbmklist	0xEE
-#define Fcalc		0xEF
+//Nonstandard Zyld keys, using reserved scancodes. fill_qwerty_fake_krb() translates these to standard codes using page C codes.
+#define Fopen		0xE8
+#define Fcommit		0xE9
+#define Fwebmark		0xEA
+#define Fcalc		0xEB
+#define Fweb		0xEC
+#define Fclose		0xED
+#define Fbaklink	0xEE
+#define Ffwdlink	0xEF
 
-//Nonstandard Zyld keys, using reserved scancodes. fill_qwerty_fake_krb() translates all these to standard codes using ctrl chords.
-#define Fbw_word	0xF0
-#define Fend_wrd	0xF1
+//Nonstandard Zyld keys, using reserved scancodes. fill_qwerty_fake_krb() translates these to standard codes using ctrl chords.
+#define Fbakword	0xF0
+#define Fendword	0xF1
+
+//Nonstandard Zyld keys, using reserved scancodes. fill_qwerty_fake_krb() translates this to sticky alt-tab.
 #define Fnextwin	0xF2
 
 //Nonstandard Zyld keys, using reserved scancodes, with processing done exclusively in the keyboard; no scancodes ever sent.
-#define Kl_fn	0xF5 //Not present on Zyld.
-#define Kr_fn	0xF6
+#define Kl_fn	0xF3 //Not present on Zyld.
+#define Kr_fn	0xF4
 
 //#define Kunsupported	0xA5 //Sent in Qwerty-fake mode when a Zyld key which conflicts with Qwerty is pressed.
 
@@ -170,7 +172,7 @@
 #define Kna	0xA6
 #define Fna	0xA7
 
-#define Altgr_win_are_same_physical_key 1
+#define Altgr_suplm_are_same_physical_key 1
 
 //12 by 6 matrices, row major. "key" matrix for individual keys, and "fn" matrix for fn-chorded keys.
 uint8_t logical_key_matrix[]={
@@ -179,14 +181,14 @@ Kleft_doublequote, Kdash, Kp, Ku, Kc, Kb, Kk, Kd, Kl, Ky, Kz, Kright_doublequote
 Kleft_parenthesis, Ka, Kn, Ki, Ks, Kw, Kg, Kt, Kh, Ko, Kr, Kright_parenthesis,
 Kleftbracket, Kslash, Kperiod, Kcomma, Kf, Kbackslash, Kq, Km, Kv, Kapostrophe, Kx, Krightbracket,
 Kna, Kbacktick, Kquestionmark, Ksemicolon, Kasterisk, Ke, Kspace, Kj, Kcolon, Kequal, Kplus, Kna,
-Kna, Kl_shft, Kdelback, Ksmrttab, Kr_altgr, Kna, Kl_alt, Kr_ctrl, Ksmrtntr, Kunderline, Kr_fn, Kna
+Kna, Kl_shft, Kdelback, Ktab, Kl_alt, Kna, Kr_altgr, Kr_ctrl, Kreturn, Kunderline, Kr_fn, Kna
 };
 
 uint8_t logical_fn_matrix[]={
 Fna, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, Fna,
-F10, Fcase, Fexecmd, Fswchbuf, Fcommit, Fcalc, Fpgup, Fbw_word, Fup, Fend_wrd, F11, F12,
-Fslrpbck, Fuarg, Fcopy, Fpaste, Fisearch, Fwebsrch, Fselsexp, Fleft, Fdown, Fright, Fesc, Fslrpfwd,
-Fpause, Frender, Fundo, Frevmark, Fsetmark, Fclose, Fexchpm, Fhome, Fpgdn, Fend, Ffindchr, Fprintsc,
-Fna, Fscrlk, Fhlpprfx, Frepeat, Fgomark, Fcut, Ffw_word, Flnkback, Fbmklist, Flinkfwd, Fctxmenu, Fna,
-Fna, Kl_shft, Fdelete, Fnextwin, Kl_win, Fna, Kl_alt, Kr_ctrl, Ffnenter, Findent, Kr_fn, Fna
+F10, Fcase, Fprog, Fundo, Fcommit, Fburst, Fcalc, Fbakword, Fup, Fendword, F11, F12,
+Fslurpbw, Farg, Fcopy, Fpaste, Fsearch, Fweb, Fpageup, Fleft, Fdown, Fright, Fesc, Fslurpfw,
+Fpause, Fxchmark, Fopen, Frevmark, Fsetmark, Fselexp, Fclose, Fhome, Fpagedn, Fend, Fgochar, Fprintsc,
+Fna, Fscrlk, Fhelp, Fwebmark, Fgomark, Fcut, Ffwdword, Fbaklink, Frender, Ffwdlink, Fctxmenu, Fna,
+Fna, Kl_shft, Fdelete, Fnextwin, Kl_alt, Fna, Kr_suplm, Kr_ctrl, Fenter, Findent, Kr_fn, Fna
 };
