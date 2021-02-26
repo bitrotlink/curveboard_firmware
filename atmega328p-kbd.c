@@ -382,32 +382,66 @@ void fill_qwerty_fake_krb(void) {
 	int qwerty_fake_altgr=mod_keys&MKr_altgr;
 	int qwerty_fake_ctrl=mod_keys&(MKl_ctrl|MKr_ctrl);
 	int qwerty_fake_key=lastkey;
-	if(lastkey==Fopen) {qwerty_fake_key=0; krb.page_C_key=0x202;}
-	else if(lastkey==Fclose) {qwerty_fake_key=0; krb.page_C_key=0x203;}
-	else if(lastkey==Fcommit) {qwerty_fake_key=0; krb.page_C_key=0x207;}
-	else if(lastkey==Fweb) {qwerty_fake_key=0; krb.page_C_key=0x221;}
-	else if(lastkey==Fbaklink) {qwerty_fake_key=0; krb.page_C_key=0x224;}
-	else if(lastkey==Ffwdlink) {qwerty_fake_key=0; krb.page_C_key=0x225;}
-	else if(lastkey==Fwebmark) {qwerty_fake_key=0; krb.page_C_key=0x22a;}
-	else if(lastkey==Fcalc) {qwerty_fake_key=0; krb.page_C_key=0x192;}
-	//Coding bw_word and end_wrd as ctrl-left and -right because those are standard widely-supported codings.
-	else if(lastkey==Fbakword) {qwerty_fake_key=Fleft; qwerty_fake_ctrl=MKr_ctrl;}
-	else if(lastkey==Fendword) {qwerty_fake_key=Fright; qwerty_fake_ctrl=MKr_ctrl;}
-	//Sticky alt-tab
-	else if(lastkey==Fnextwin) {
-	  qwerty_fake_key=Ktab;
-	  qwerty_fake_alt=MKl_alt;
-	  mod_keys|=MKl_alt; // Virtually stick alt, even if real alt key isn't pressed
-	}
-	else {
-	  if(real_suplm) switch(lastkey) {
+
+	int page_C_fn_mapping_done = 0;
+	if(real_suplm) {
+	  int page_C_suplm_fns_qnty =
+	    sizeof(page_C_mappings_suplm_chords)/sizeof(int)/2;
+	  for(i=0; i<page_C_suplm_fns_qnty; i++) {
+	    if(lastkey==page_C_mappings_suplm_chords[i][0]) {
+	      qwerty_fake_key = 0;
+	      qwerty_fake_suplm=0;
+	      krb.page_C_key=page_C_mappings_suplm_chords[i][1];
+	      page_C_fn_mapping_done = 1;
+	      break;
+	    }
+	  }
+
+	  if(!page_C_fn_mapping_done)
+	    switch(lastkey) {
+	    case F0:
+	      qwerty_fake_key=Fmute; qwerty_fake_suplm=0; break;
+	    case F1:
+	      qwerty_fake_key=Fvoldn; qwerty_fake_suplm=0; break;
+	    case F2:
+	      qwerty_fake_key=Fvolup; qwerty_fake_suplm=0; break;
 	    case Fscrlk:
+	      qwerty_fake_key=Fcapslk; qwerty_fake_suplm=0; break;
+	    case Fctxmenu:
 	      qwerty_fake_key=Finsert; qwerty_fake_suplm=0; break;
 	    case Fprintsc:
 	      qwerty_fake_key=Fsysreq; qwerty_fake_suplm=0; break;
 	    case Fpause:
-	      qwerty_fake_ctrl=MKr_ctrl; qwerty_fake_suplm=0; break; //Suplm-pause (zyld _break_) is qwerty ctrl-pause.
+	      //Suplm-pause (Zyld _break_) is qwerty ctrl-pause
+	      qwerty_fake_ctrl=MKr_ctrl; qwerty_fake_suplm=0; break;
 	    }
+	}
+
+	if(!page_C_fn_mapping_done) {
+	  int page_C_direct_fns_qnty =
+	    sizeof(page_C_mappings_direct_fns)/sizeof(int)/2;
+	  for(i=0; i<page_C_direct_fns_qnty; i++) {
+	    if(lastkey==page_C_mappings_direct_fns[i][0]) {
+	      qwerty_fake_key=0;
+	      krb.page_C_key=page_C_mappings_direct_fns[i][1];
+	      break;
+	    }
+	  }
+	}
+
+	//Sticky alt-tab
+	if(lastkey==Fnextwin) {
+	  qwerty_fake_key=Ktab;
+	  qwerty_fake_alt=MKl_alt;
+	  mod_keys|=MKl_alt; // Virtually stick alt, even if real alt key isn't pressed
+	}
+
+	//Coding bw_word and end_wrd as ctrl-left and -right because those are standard widely-supported codings.
+	else if(lastkey==Fbakword) {qwerty_fake_key=Fleft; qwerty_fake_ctrl=MKr_ctrl;}
+	else if(lastkey==Fendword) {qwerty_fake_key=Fright; qwerty_fake_ctrl=MKr_ctrl;}
+
+	else {
+
 	  if(!(mod_keys&MKr_altgr)) switch(lastkey) {
 	    case K0:
 	      if(real_shift) {qwerty_fake_key=Kequal;} break;
@@ -507,8 +541,6 @@ void fill_qwerty_fake_krb(void) {
 	      break;
 	    case Kbackslash:
 	      if(real_shift) {qwerty_fake_key=Ksurr4; qwerty_fake_shift=0;} break;
-	    case Fscrlk:
-	      if(real_shift && (qwerty_fake_key==lastkey)) {qwerty_fake_key=Fcapslk; qwerty_fake_shift=0;} break;
 	    }
 	  if(real_shift && (mod_keys&MKr_altgr) && (lastkey==Kasterisk))
 	    qwerty_fake_key=Ksurr5;
