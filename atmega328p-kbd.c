@@ -33,6 +33,7 @@
 #define RELEASE_BOUNCE_MS 20
 #define SAMPLE_PERIOD_MS 1
 #define RETRY_PERIOD_MS 1
+#define MOD_SUPPRESSION_DELAY_MS 5
 
 #define RETRY_IF_NO_ACK 1 //Disable this when debugging to prevent spewing retries if I'm not sending acks.
 #define USE_QWERTY_FAKES 1 //Send scancodes according to standard qwerty, using fake keys and fake presses of shift, so that the mapping in the OS can be standard qwerty, and brain-dead VMMs such as VMware which provide only PS/2 virtual keyboards to VMs will pass all the keys (zyld natively uses USB HID page 7 codes which have no PS/2 counterparts, so VMware drops those keys when sent to VMs). For example, when colon is pressed, instead of sending zyld native 0xcb (which _is_ the standard code for colon, though X on Debian 6 doesn't recognize it), send shift-semicolon.
@@ -83,6 +84,11 @@ int fn_pressed; //Would be type bool, but avr-gcc bitches about it.
 int l_fn_pressed; //Left fn key.
 int r_fn_pressed;
 int real_alt_pressed; // Used to distinguish real alt key from sticky virtual alt set by special case of nextwin (fn-tab)
+
+int mod_suppressed; // Bool
+int deferred_nonmod_key;
+int deferred_page_C_key;
+uint8_t mod_keys_at_deferral;
 
 //Copied from http://en.wikipedia.org/wiki/Fletcher%27s_checksum
 void fletcher16( uint8_t *checkA, uint8_t *checkB, uint8_t *data, size_t len )
@@ -370,6 +376,16 @@ void fill_krb (void) {
 
 void fill_qwerty_fake_krb(void) {
 	int i;
+	if(mod_suppressed) {
+	  // Send the deferred non-mod key from the previous cycle,
+	  // during which a mod key was suppressed simultaneously.
+	  mod_suppressed = 0;
+	  krb.nonmod_keys[0] = deferred_nonmod_key;
+	  krb.page_C_key = deferred_page_C_key;
+	  krb.mod_keys = mod_keys_at_deferral;
+	  _delay_ms(MOD_SUPPRESSION_DELAY_MS);
+	  return;
+	}
 	krb.mod_keys=mod_keys;
 	for(i=0; i<6; i++) krb.nonmod_keys[i]=0;
 	krb.page_C_key=0;
@@ -399,12 +415,12 @@ void fill_qwerty_fake_krb(void) {
 
 	  if(!page_C_fn_mapping_done)
 	    switch(lastkey) {
-	    case F0:
-	      qwerty_fake_key=Fmute; qwerty_fake_suplm=0; break;
-	    case F1:
+	    case F6:
 	      qwerty_fake_key=Fvoldn; qwerty_fake_suplm=0; break;
-	    case F2:
+	    case F7:
 	      qwerty_fake_key=Fvolup; qwerty_fake_suplm=0; break;
+	    case F8:
+	      qwerty_fake_key=Fmute; qwerty_fake_suplm=0; break;
 	    case Fscrlk:
 	      qwerty_fake_key=Fcapslk; qwerty_fake_suplm=0; break;
 	    case Fctxmenu:
@@ -486,7 +502,8 @@ void fill_qwerty_fake_krb(void) {
 	      if(real_shift) qwerty_fake_key=Kperiod; break;
 	    case Kasterisk:
 	      if(real_shift) {
-		qwerty_fake_key=K2;
+		qwerty_fake_shift=0;
+		qwerty_fake_key=Ksurr5;
 	      } else { // Not strictly necessary, since keypad asterisk does generally work, but xterm sometimes wigs out and stops recognizing it, so using Qwerty's ordinary shift-8 avoids the problem
 		qwerty_fake_key=K8;
 		qwerty_fake_shift=MKl_shft;
@@ -499,7 +516,10 @@ void fill_qwerty_fake_krb(void) {
 	      }
 	      break;
 	    case Kbacktick:
-	      if(real_shift) {qwerty_fake_shift=0; qwerty_fake_key=Ksurr5;}
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr4;
+		qwerty_fake_altgr=MKr_altgr;
+	      }
 	      break;
 	    case Kunderline:
 	      // Regardless of real_shift, so that both unshifted and shifted Kunderline produce underline
@@ -507,8 +527,7 @@ void fill_qwerty_fake_krb(void) {
 	      break;
 	    case Kdash:
 	      if(real_shift) {
-		qwerty_fake_key=Ksurr4;
-		qwerty_fake_altgr=MKr_altgr;
+		qwerty_fake_key=K2;
 	      }
 	      break;
 	    case Kslash:
@@ -526,7 +545,11 @@ void fill_qwerty_fake_krb(void) {
 	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=K0;}
 	      break;
 	    case Kleftbracket:
-	      if(real_shift) {qwerty_fake_key=Ksurr3; qwerty_fake_shift=0;} break;
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr3;
+		qwerty_fake_shift=0;
+	      }
+	      break;
 	    case Krightbracket:
 	      if(real_shift) {qwerty_fake_key=Ksurr3;} break;
 	    case Kquestionmark:
@@ -540,7 +563,11 @@ void fill_qwerty_fake_krb(void) {
 	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Ksemicolon;}
 	      break;
 	    case Kbackslash:
-	      if(real_shift) {qwerty_fake_key=Ksurr4; qwerty_fake_shift=0;} break;
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr4;
+		qwerty_fake_shift=0;
+	      }
+	      break;
 	    }
 	  if(real_shift && (mod_keys&MKr_altgr) && (lastkey==Kasterisk))
 	    qwerty_fake_key=Ksurr5;
@@ -549,9 +576,31 @@ void fill_qwerty_fake_krb(void) {
 	    qwerty_fake_shift=0;
 	  }
 	}
-	krb.mod_keys=(mod_keys&~(MKl_shft|MKr_shft|MKl_ctrl|MKr_ctrl|MKl_alt|MKr_altgr|MKr_suplm))
-	  | qwerty_fake_shift|qwerty_fake_ctrl|qwerty_fake_alt|qwerty_fake_altgr|qwerty_fake_suplm;
+	unsigned int fake_mods = qwerty_fake_shift|qwerty_fake_ctrl
+	  | qwerty_fake_alt|qwerty_fake_altgr|qwerty_fake_suplm;
+	krb.mod_keys=
+	  (mod_keys&
+	   // Remove the real ones
+	   ~(MKl_shft|MKr_shft|MKl_ctrl
+	     |MKr_ctrl|MKl_alt|MKr_altgr|MKr_suplm))
+	  // Add the fake ones
+	  | fake_mods;
 	krb.nonmod_keys[0]=qwerty_fake_key;
+	if(mod_keys & ~fake_mods) {
+	  // Avoid confusing the host computer with a simultaneously
+	  // released mod key and pressed non-mod key. Defer
+	  // sending the pressed non-mod key until the next cycle.
+	  mod_suppressed = 1;
+	  deferred_nonmod_key = krb.nonmod_keys[0];
+	  krb.nonmod_keys[0] = 0;
+	  deferred_page_C_key = krb.page_C_key;
+	  krb.page_C_key = 0;
+	  mod_keys_at_deferral = krb.mod_keys;
+	  kbchanged = 1; // Undo the clear done in main's infinite loop,
+	  // to force a second fill_qwerty_fake_krb call despite no actual
+	  // change in keyboard state, so the mod_suppressed condition
+	  // at the top will be triggered to send the non-mod key.
+	}
 }
 
 void clearscreen(void) {
@@ -706,6 +755,10 @@ int main (void)
 	kbchanged=0;
 	while(UCSRA & (1<<RXC)) USARTReadChar(); //Flush garbage received during startup.
 	//USARTWriteChar(0xff); //debug. Inject intentional garbage to ensure it's handled ok.
+	mod_suppressed = 0;
+	deferred_nonmod_key = 0;
+	deferred_page_C_key = 0;
+	mod_keys_at_deferral = 0;
 	while(1) {
 		scan_kb();
 		debounce_and_count();

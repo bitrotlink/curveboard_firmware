@@ -163,14 +163,14 @@
 #define PageCcalc 0x192
 #define PageCeditor 0x185
 #define PageCweb 0x196
-#define PageCschedul 0x18E
-#define PageCtasks 0x18F
-#define PageCdatabas 0x189
 #define PageCzoomout 0x22E
 #define PageCzoomstd 0x22F
 #define PageCzoomin 0x22D
+#define PageCschedul 0x18E
+#define PageCtasks 0x18F
+#define PageCdatabas 0x189
 #define PageCfinance 0x191
-#define PageCjournal 0x190
+#define PageCmemo 0x190
 #define PageCfiles 0x194
 #define PageCchat 0x199
 #define PageCsyshelp 0x1BD
@@ -208,14 +208,14 @@ int page_C_mappings_suplm_chords[][2] = {
   Fmacro, PageCcpanel,
   Fpageup, PageCeditor,
   Fwebsrch, PageCweb,
+  F0, PageCzoomout,
+  F1, PageCzoomstd,
+  F2, PageCzoomin,
   F3, PageCschedul,
   F4, PageCtasks,
   F5, PageCdatabas,
-  F6, PageCzoomout,
-  F7, PageCzoomstd,
-  F8, PageCzoomin,
   F9, PageCfinance,
-  F10, PageCjournal,
+  F10, PageCmemo,
   F11, PageCfiles,
   F12, PageCchat,
   Fhelp, PageCsyshelp,
