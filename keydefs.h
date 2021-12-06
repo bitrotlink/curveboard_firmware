@@ -88,7 +88,7 @@
 #define Fdown	0x51
 #define Fup	0x52
 #define Kasterisk	0x55
-#define Kplus	0x57
+#define Kplus	0x57 // Dropped key on 2021 Dec 5th; using code now only as a surrogate
 #define Fenter	0x58 //Keypad enter. Added 2020 Jan 1st.
 #define Fctxmenu	0x65
 //See below for F13-F24
@@ -119,8 +119,9 @@
 #define Kr_suplm	0xE7
 
 //Nonstandard Zyld keys. fill_qwerty_fake_krb() translates these to shifts of standard Qwerty keys.
-#define Kquestionmark	0x88 //International2
-#define Kunderline	0x89 //International3
+#define Kstraight_doublequote	0x87
+#define Kquestionmark		0x88 //International2
+#define Kunderline		0x89 //International3
 
 //Nonstandard Zyld keys. These scancodes are sent directly. These are the only Zyld character keys with characters in the primary layer (no shift or altgr) that Qwerty doesn't have.
 #define Kleft_doublequote	0x8A //International4
@@ -246,16 +247,16 @@ uint8_t logical_key_matrix[]={
 Kna, K0, K1, K2, K3, K4, K5, K6, K7, K8, K9, Kna,
 Kleft_doublequote, Kdash, Kp, Ku, Kc, Kb, Kk, Kd, Kl, Ky, Kz, Kright_doublequote,
 Kleft_parenthesis, Ka, Kn, Ki, Ks, Kw, Kg, Kt, Kh, Ko, Kr, Kright_parenthesis,
-Kleftbracket, Kslash, Kperiod, Kcomma, Kf, Kbackslash, Kq, Km, Kv, Kapostrophe, Kx, Krightbracket,
-Kna, Kbacktick, Kquestionmark, Ksemicolon, Kasterisk, Ke, Kspace, Kj, Kcolon, Kequal, Kplus, Kna,
-Kna, Kl_shft, Kdelback, Ktab, Kl_alt, Kna, Kr_altgr, Kr_ctrl, Kreturn, Kunderline, Kr_fn, Kna
+Kleftbracket, Kapostrophe, Kquestionmark, Kcomma, Kf, Kunderline, Kq, Km, Kv, Kslash, Kx, Krightbracket,
+Kna, Kbacktick, Kasterisk, Ksemicolon, Kbackslash, Ke, Kspace, Kj, Kcolon, Kequal, Kstraight_doublequote, Kna,
+Kna, Kl_shft, Ktab, Kperiod, Kl_alt, Kna, Kr_altgr, Kr_ctrl, Kreturn, Kdelback, Kr_fn, Kna
 };
 
 uint8_t logical_fn_matrix[]={
 Fna, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, Fna,
 F10, Fspell, Fprog, Fundo, Fcommit, Fmacro, Fcommand, Fbakword, Fup, Fendword, F11, F12,
 Fslurpbw, Farg, Fcopy, Fpaste, Fsearch, Fwebsrch, Fpageup, Fleft, Fdown, Fright, Fesc, Fslurpfw,
-Fpause, Fxchmark, Fopen, Frevmark, Fsetmark, Fselect, Fclose, Fhome, Fpagedn, Fend, Fgochar, Fprintsc,
-Fna, Fscrlk, Fhelp, Fwebmark, Fgomark, Fcut, Ffwdword, Fbaklink, Fkeymap, Ffwdlink, Fctxmenu, Fna,
-Fna, Kl_shft, Fdelete, Fnextwin, Kl_alt, Fna, Kr_suplm, Kr_ctrl, Fenter, Findent, Kr_fn, Fna
+Fpause, Fxchmark, Fhelp, Frevmark, Fsetmark, Findent, Fclose, Fhome, Fpagedn, Fend, Fgochar, Fprintsc,
+Fna, Fscrlk, Fgomark, Fwebmark, Fselect, Fcut, Ffwdword, Fbaklink, Fkeymap, Ffwdlink, Fctxmenu, Fna,
+Fna, Kl_shft, Fnextwin, Fopen, Kl_alt, Fna, Kr_suplm, Kr_ctrl, Fenter, Fdelete, Kr_fn, Fna
 };

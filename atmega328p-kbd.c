@@ -456,11 +456,31 @@ void fill_qwerty_fake_krb(void) {
 	else if(lastkey==Fbakword) {qwerty_fake_key=Fleft; qwerty_fake_ctrl=MKr_ctrl;}
 	else if(lastkey==Fendword) {qwerty_fake_key=Fright; qwerty_fake_ctrl=MKr_ctrl;}
 
+	else if((mod_keys&MKr_altgr)&&(lastkey==Kdelback)) {
+	  qwerty_fake_altgr=0;
+	  qwerty_fake_ctrl=MKr_ctrl;
+	}
+
+	else if((mod_keys&MKr_altgr)&&(lastkey==Kreturn)) {
+	  qwerty_fake_altgr=0;
+	  qwerty_fake_ctrl=MKr_ctrl;
+	}
+
+	else if((mod_keys&MKr_altgr)&&(lastkey==Kspace)) {
+	  qwerty_fake_altgr=0;
+	  qwerty_fake_ctrl=MKr_ctrl;
+	}
+
 	else {
 
 	  if(!(mod_keys&MKr_altgr)) switch(lastkey) {
 	    case K0:
-	      if(real_shift) {qwerty_fake_key=Kequal;} break;
+	      if(real_shift) {
+		qwerty_fake_key=Kplus;
+		qwerty_fake_shift=0;
+		qwerty_fake_altgr=MKr_altgr;
+	      }
+	      break;
 	    case K1:
 	      if(real_shift) qwerty_fake_key=K5; break;
 	    case K2:
@@ -479,7 +499,7 @@ void fill_qwerty_fake_krb(void) {
 	      break;
 	    case K6:
 	      if(real_shift) {
-		qwerty_fake_key=Kslash;
+		qwerty_fake_key=Kcolon;
 		qwerty_fake_shift=0;
 	      }
 	      break;
@@ -487,8 +507,9 @@ void fill_qwerty_fake_krb(void) {
 	      if(real_shift) qwerty_fake_key=K6; break;
 	    case K8:
 	      if(real_shift) {
-		qwerty_fake_key=Kperiod;
+		qwerty_fake_key=Kcolon;
 		qwerty_fake_shift=0;
+		qwerty_fake_shift=MKl_shft;
 	      }
 	      break;
 	    case K9:
@@ -502,23 +523,40 @@ void fill_qwerty_fake_krb(void) {
 	      if(real_shift) qwerty_fake_key=Kperiod; break;
 	    case Kasterisk:
 	      if(real_shift) {
-		qwerty_fake_shift=0;
-		qwerty_fake_key=Ksurr5;
+		qwerty_fake_key=Kcomma;
 	      } else { // Not strictly necessary, since keypad asterisk does generally work, but xterm sometimes wigs out and stops recognizing it, so using Qwerty's ordinary shift-8 avoids the problem
 		qwerty_fake_key=K8;
 		qwerty_fake_shift=MKl_shft;
 	      }
 	      break;
+	      /* Dropped unshifted plus on 2021 Dec 5th
 	    case Kplus: // Don't ever pass shift-plus since xterm interprets it as special
 	      if(real_shift) {
 		qwerty_fake_key=Ksurr3;
 		qwerty_fake_altgr=MKr_altgr;
 	      }
 	      break;
+	      */
 	    case Kbacktick:
 	      if(real_shift) {
 		qwerty_fake_key=Ksurr4;
 		qwerty_fake_altgr=MKr_altgr;
+	      }
+	      break;
+	    case Kapostrophe:
+	      if(real_shift) {
+		qwerty_fake_shift=0;
+		qwerty_fake_key=Ksurr5;
+	      }
+	      break;
+	    case Kstraight_doublequote:
+	      if(real_shift) {
+		qwerty_fake_key=Ksurr3;
+		qwerty_fake_altgr=MKr_altgr;
+	      }
+	      else {
+		qwerty_fake_shift=MKl_shft;
+		qwerty_fake_key=Kapostrophe;
 	      }
 	      break;
 	    case Kunderline:
@@ -533,7 +571,7 @@ void fill_qwerty_fake_krb(void) {
 	    case Kslash:
 	      if(real_shift) qwerty_fake_key=Ksurr4; break;
 	    case Kperiod:
-	      if(real_shift) qwerty_fake_key=K1; break;
+	      if(real_shift) {qwerty_fake_key=Kequal;} break;
 	    case Kcomma:
 	      if(real_shift) qwerty_fake_key=Kbacktick; break;
 	    case Kleft_parenthesis:
@@ -553,7 +591,7 @@ void fill_qwerty_fake_krb(void) {
 	    case Krightbracket:
 	      if(real_shift) {qwerty_fake_key=Ksurr3;} break;
 	    case Kquestionmark:
-	      if(real_shift) qwerty_fake_key=Kcomma;
+	      if(real_shift) qwerty_fake_key=K1;
 	      else {qwerty_fake_shift=MKl_shft; qwerty_fake_key=Kslash;}
 	      break;
 	    case Ksemicolon:
@@ -571,7 +609,7 @@ void fill_qwerty_fake_krb(void) {
 	    }
 	  if(real_shift && (mod_keys&MKr_altgr) && (lastkey==Kasterisk))
 	    qwerty_fake_key=Ksurr5;
-	  if(real_shift && (mod_keys&MKr_altgr) && (lastkey==Kplus)) {
+	  if(real_shift && (mod_keys&MKr_altgr) && (lastkey==Kstraight_doublequote)) {
 	    qwerty_fake_key=Ksurr3;
 	    qwerty_fake_shift=0;
 	  }
