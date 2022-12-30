@@ -4,10 +4,6 @@
 #include <stdio.h>
 #include <avr/interrupt.h>
 
-// http://homepage.hispeed.ch/peterfleury/doxygen/avr-gcc-libraries/group__pfleury__ic2master.html
-// http://homepage.hispeed.ch/peterfleury/i2cmaster.zip
-#include "I2C/i2cmaster.h"
-
 #include "keydefs.h"
 #include "inter_AVR_protocol.h"
 
@@ -40,18 +36,6 @@
 #define MAX_ROLLOVER 16
 
 #define CAPTOUCH_SYNC_PERIOD 30 // Number of kbd scan cycles per capacitive touch scan cycle. Setting this much lower than 30 makes the AT42QT1011 chips too finicky with multitouch.
-
-#define CAP1188 0x29 // I2C address
-#define CAP1188_SENSOR_LED_LINK_ADDR 0x72
-#define CAP1188_SENSOR_LED_LINK_VAL 0xff // Link all sensors to LEDs
-#define CAP1188_MULTITOUCH_ADDR 0x2a
-#define CAP1188_MULTITOUCH_VAL 0x84 // Enable two simultaneous keypresses
-#define CAP1188_KEYREPEAT_ADDR 0x28
-#define CAP1188_KEYREPEAT_VAL 0 // Disable key autorepeat
-#define CAP1188_KEYENABLE_ADDR 0x21
-#define CAP1188_KEYENABLE_VAL 0xa0 // Enable just two keys, for faster sampling cycle period
-#define CAP1188_AVGSAMPLCONF_ADDR 0x24
-#define CAP1188_AVGSAMPLCONF_VAL 0x38 // Set cycle time to 35ms
 
 unsigned int debounce_counter_init_press;
 unsigned int debounce_counter_init_release;
@@ -110,31 +94,6 @@ void fletcher16( uint8_t *checkA, uint8_t *checkB, uint8_t *data, size_t len )
         sum2 = (sum2 & 0xff) + (sum2 >> 8);
         *checkA = (uint8_t)sum1;
         *checkB = (uint8_t)sum2;
-}
-
-uint8_t captouch_read(uint8_t addr) {
-  i2c_start(CAP1188+I2C_WRITE);
-  i2c_write(addr);
-  i2c_stop();
-  i2c_start(CAP1188+I2C_READ);
-  uint8_t retval = i2c_readNak();
-  i2c_stop();
-  return retval;
-}
-
-void captouch_write(uint8_t addr, uint8_t val) {
-  i2c_start(CAP1188+I2C_WRITE);
-  i2c_write(addr);
-  i2c_write(val);
-  i2c_stop();
-}
-
-void captouch_init() {
-  captouch_write(CAP1188_SENSOR_LED_LINK_ADDR, CAP1188_SENSOR_LED_LINK_VAL);
-  captouch_write(CAP1188_MULTITOUCH_ADDR, CAP1188_MULTITOUCH_VAL);
-  captouch_write(CAP1188_KEYREPEAT_ADDR, CAP1188_KEYREPEAT_VAL);
-  captouch_write(CAP1188_KEYENABLE_ADDR, CAP1188_KEYENABLE_VAL);
-  captouch_write(CAP1188_AVGSAMPLCONF_ADDR, CAP1188_AVGSAMPLCONF_VAL);
 }
 
 uint16_t read_kb_line() { // Return new keypad column state.
@@ -768,10 +727,6 @@ void fill_and_send_krb(int is_retry) {
 
 int main (void)
 {
-  //Can't use these since SDA and SCL for I2C are the same as A4 and A5, which are already needed for columns.
-  //i2c_init();
-  //captouch_init();
-  // So, instead of CAP1188, I'm using a pair of AT42QT1011 chips.
 	int i;
 	uint8_t ack;
 	DDRB&=~0x1e; DDRC&=~0x3f; //Set columns to input
