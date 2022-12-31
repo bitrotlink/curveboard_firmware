@@ -1,7 +1,9 @@
 #+TITLE: Curveboard Firmware
 
 * Introduction
-This Arduino Uno firmware is a complete USB keyboard controller. It was created in conjunction with the companion [[../curveboard][curveboard]] frame.
+This Arduino Uno firmware is a complete USB keyboard controller. It was created in conjunction with the [[../curveboard][curveboard]]‡ frame.
+
+‡ This is a relative link to /../curveboard/ in the source file but Github mangles the link so you can't follow it if you're viewing this file there. I could work around Github's brain damage with an absolute link, but... no. Just no. You can manually edit the URL in your browser — unless your browser is a Google product and they're trying to hide the URL again.
 
 * Status
 *Complete*
