@@ -1,9 +1,8 @@
 #+TITLE: Curveboard Firmware
 
 * Introduction
-This Arduino Uno firmware is a complete USB keyboard controller. It was created in conjunction with the [[../curveboard][curveboard]]† frame.
+This Arduino Uno firmware is a complete USB keyboard controller, from the scanning matrix to the host interface, and includes character remapping capability not available in any other firmware. It was created in conjunction with the /curveboard/ frame.
 
-† This is a relative link to /../curveboard/ in the source file but Github mangles the link so you can't follow it if you're viewing this file there. You can manually edit the URL in your browser.
 
 * Status
 *Complete*
@@ -27,6 +26,8 @@ This firmware solves that problem via a function plane switch key interpreted en
 Standard programmable keyboards allow arbitrary remapping of physical keys to logical keys, and provide macros for pressing sequences of logical keys, but don't allow arbitrary character remapping; the unshifted and shifted symbols for each key remain bound together. This firmware enables arbitrary character remapping via macros that use virtualized mod keys, including shift, alt, altgr, ctrl, the supplemental win/super key, and the function plane switch key.
 
 For example, because parentheses are such commonly used characters, the default mapping assigns them to dedicated keys on the home row, where the caps-lock and apostrophe keys are on Qwerty. They can be pressed without pressing shift, and the firmware will generate /shift-9/ and /shift-0/ virtual chords, so that hosts expecting standard Qwerty keyboards will interpret the chords as parentheses. Many other commonly used characters are likewise unshifted, including the question mark, and other less common ones are moved to more logical shifts; e.g. the exclamation point is by default mapped to /shift-question-mark/, not /shift-1/. The firmware properly handles rollover even in cases involving virtually shifted and virtually unshifted keys.
+
+A naive approach to such remapping would be to just use physical keys as one-shot triggers to macros that produce one-shot logical sequences of key presses and releases. But that's not what this firmware does. Instead, pressing and holding physical keys results in logical keys being pressed and held. To understand the nuance required to make this work perfectly, see the Git history.
 
 ** Unified altgr-supplemental key
 Taking advantage of the host-independent function plane switch key, any other single key can optionally be configured to function as both the altgr and the win/super key, by serving as altgr when the fn key isn't pressed and as win/super when it is. This more efficiently assigns available physical key combinations to useful logical combinations, since altgr is rarely used in combination with keys normally assigned to the function plane, such as navigation keys.
